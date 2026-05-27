@@ -6,7 +6,7 @@ phrases them, and that the filesystem jail cannot be escaped.
 
 import pytest
 
-from localgravity.policy import Decision, Policy, PolicyEngine, PolicyError, Verdict
+from axon.policy import Decision, Policy, PolicyEngine, PolicyError, Verdict
 
 POLICY_PATH = "policy.yaml"
 

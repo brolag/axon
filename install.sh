@@ -1,10 +1,10 @@
 #!/bin/bash
-# localgravity installer.
+# axon installer.
 # Verifies prerequisites, pulls the model, installs the package, runs the tests.
 set -e
 
-MODEL="${LOCALGRAVITY_MODEL:-gemma4:26b}"
-HOST="${LOCALGRAVITY_HOST:-http://localhost:11434}"
+MODEL="${AXON_MODEL:-gemma4:26b}"
+HOST="${AXON_HOST:-http://localhost:11434}"
 
 say() { printf "\033[1;36m==>\033[0m %s\n" "$1"; }
 warn() { printf "\033[1;33m!!\033[0m %s\n" "$1"; }
@@ -24,7 +24,7 @@ say "Python OK: $($PY --version)"
 say "Checking Ollama..."
 if ! command -v ollama >/dev/null 2>&1; then
   warn "ollama not found on PATH. Install it from https://ollama.com and re-run."
-  warn "(If Ollama runs on another host, set LOCALGRAVITY_HOST and skip the pull.)"
+  warn "(If Ollama runs on another host, set AXON_HOST and skip the pull.)"
 else
   say "Ollama OK: $(ollama --version 2>/dev/null | head -1)"
 fi
@@ -43,7 +43,7 @@ else
 fi
 
 # 4. Install the package
-say "Installing localgravity (editable)..."
+say "Installing axon (editable)..."
 "$PY" -m pip install -e . -q || die "pip install failed."
 
 # 5. Verify with the test suite (no model calls)
@@ -51,5 +51,5 @@ say "Running tests..."
 "$PY" -m pytest -q || die "tests failed — installation is not healthy."
 
 say "Done. Try it:"
-echo "    localgravity \"Fix the failing test and confirm it passes\" --cwd ./your-project"
+echo "    axon \"Fix the failing test and confirm it passes\" --cwd ./your-project"
 echo "    python examples/fix_bug.py     # end-to-end demo"

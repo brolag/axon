@@ -2,8 +2,8 @@
 
 import pytest
 
-from localgravity.client import ModelTurn, ToolCall
-from localgravity.loop import run_agent
+from axon.client import ModelTurn, ToolCall
+from axon.loop import run_agent
 
 POLICY = "policy.yaml"
 

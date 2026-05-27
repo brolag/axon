@@ -1,4 +1,4 @@
-# localgravity
+# axon
 
 A local coding agent that recreates Google Antigravity's **plan → tool → verify** pattern, powered by **Gemma 4** via Ollama. No Gemini API, no cloud, no code egress. Apache-2.0.
 
@@ -6,7 +6,7 @@ A local coding agent that recreates Google Antigravity's **plan → tool → ver
 
 ## What it is
 
-`localgravity` is the agent **harness** — the loop, the toolset, the safety policy — that turns a local model into an agent that *does the work and verifies it*, instead of an autocomplete that suggests. It is deliberately framework-free (no LangChain): the point is to show the harness naked.
+`axon` is the agent **harness** — the loop, the toolset, the safety policy — that turns a local model into an agent that *does the work and verifies it*, instead of an autocomplete that suggests. It is deliberately framework-free (no LangChain): the point is to show the harness naked.
 
 The agent is the runtime: it plans, calls tools (read/write files, run shell, run tests), executes, verifies (runs the tests itself), and repeats until done or a cut fires.
 
@@ -20,7 +20,7 @@ ollama pull gemma4:26b
 pip install -e .
 
 # 3. Run the agent against a workspace:
-localgravity "Fix the failing test in test_calc.py and confirm it passes" --cwd ./myproject
+axon "Fix the failing test in test_calc.py and confirm it passes" --cwd ./myproject
 
 # Or the end-to-end example (creates a buggy repo and fixes it):
 python examples/fix_bug.py
@@ -41,7 +41,7 @@ Each design decision is grounded in AI-engineering literature, not vibes:
 ## Architecture
 
 ```
-localgravity/
+axon/
   policy.py      # PolicyEngine: allow/ask/deny, filesystem jail, non-overridable deny layer
   client.py      # Ollama over HTTP (stdlib only). Validates tool-call shape.
   session.py     # state: messages, step counter, token budget, redundancy caches

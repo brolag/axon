@@ -2,7 +2,7 @@ __pycache__/
 *.pyc
 *.egg-info/
 .pytest_cache/
-.localgravity/
+.axon/
 build/
 dist/
 .venv/

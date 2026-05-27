@@ -2,11 +2,11 @@
 
 import pytest
 
-from localgravity.client import ToolCall
-from localgravity.context import ToolContext
-from localgravity.dispatch import dispatch
-from localgravity.policy import Policy, PolicyEngine
-from localgravity.session import Session
+from axon.client import ToolCall
+from axon.context import ToolContext
+from axon.dispatch import dispatch
+from axon.policy import Policy, PolicyEngine
+from axon.session import Session
 
 POLICY = "policy.yaml"
 
@@ -65,6 +65,6 @@ def test_shell_denied_destructive(ctx):
 def test_backup_created_on_overwrite(ctx, tmp_path):
     dispatch(ToolCall(name="write_file", arguments={"path": "f.txt", "content": "v1"}), ctx)
     dispatch(ToolCall(name="write_file", arguments={"path": "f.txt", "content": "v2"}), ctx)
-    backups = list((tmp_path / ".localgravity" / "backups").glob("f.txt.*"))
+    backups = list((tmp_path / ".axon" / "backups").glob("f.txt.*"))
     assert backups, "a backup should exist after overwrite"
     assert backups[0].read_text() == "v1"

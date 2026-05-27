@@ -29,7 +29,7 @@ from pathlib import Path
 REPO = Path(__file__).parent.parent
 sys.path.insert(0, str(REPO))
 
-from localgravity.loop import run_agent  # noqa: E402
+from axon.loop import run_agent  # noqa: E402
 
 TASKS_DIR = Path(__file__).parent / "tasks"
 POLICY = str(REPO / "policy.yaml")

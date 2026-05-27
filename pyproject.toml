@@ -1,5 +1,5 @@
 [project]
-name = "localgravity"
+name = "axon"
 version = "0.1.0"
 description = "A local coding agent that recreates Google Antigravity's plan-tool-verify pattern, powered by Gemma 4 via Ollama. No Gemini API, no cloud, no code egress."
 readme = "README.md"
@@ -16,14 +16,14 @@ dependencies = [
 dev = ["pytest>=8.0"]
 
 [project.scripts]
-localgravity = "localgravity.cli:main"
+axon = "axon.cli:main"
 
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["localgravity*"]
+include = ["axon*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]   # seed repos under eval/tasks/ are fixtures, not tests to collect

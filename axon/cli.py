@@ -1,4 +1,4 @@
-"""CLI entrypoint: localgravity "task" [options]."""
+"""CLI entrypoint: axon "task" [options]."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from .loop import run_agent
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="localgravity",
+        prog="axon",
         description="A local coding agent recreating Antigravity's plan-tool-verify pattern, powered by Gemma 4.",
     )
     parser.add_argument("task", help="The task for the agent.")

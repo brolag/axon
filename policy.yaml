@@ -1,4 +1,4 @@
-# localgravity safety policy
+# axon safety policy
 # Three verdicts: allow / ask / deny. DENY always wins (default-deny on the critical layer).
 # The model is treated as untrusted input. No security decision is delegated to the prompt.
 version: 1
@@ -15,7 +15,7 @@ deny_paths:
   - "**/*.key"
   - "**/id_rsa*"
   - "**/.ssh/**"
-  - "**/.localgravity/**"   # the harness does not edit itself
+  - "**/.axon/**"   # the harness does not edit itself
 
 # Network policy (enforced only if run inside a sandbox that controls it; advisory otherwise).
 network:

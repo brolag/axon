@@ -17,7 +17,7 @@ from .loop import LoopResult
 def to_markdown(result: LoopResult) -> str:
     s = result.session
     lines = [
-        f"# localgravity run",
+        f"# axon run",
         f"- result: **{result.reason}** ({'verified done' if result.done else 'incomplete'})",
         f"- steps: {result.steps}/{s.max_steps}",
         f"- tokens left: {s.budget_tokens}",

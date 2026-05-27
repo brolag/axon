@@ -30,7 +30,7 @@ class LoopResult:
 
 def _default_approve(kind: str, detail: str) -> bool:
     try:
-        ans = input(f"[localgravity] the agent wants to {kind}: {detail}\n  Allow? [y/N/always] ").strip().lower()
+        ans = input(f"[axon] the agent wants to {kind}: {detail}\n  Allow? [y/N/always] ").strip().lower()
     except EOFError:
         return False
     return ans in {"y", "yes", "always"}

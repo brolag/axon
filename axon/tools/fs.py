@@ -59,7 +59,7 @@ def write_file(args: dict, ctx: ToolContext) -> ToolResult:
 
     # Backup before overwrite (never blind destruction).
     if target.exists() and ctx.policy.policy.backup_before_overwrite:
-        backup_dir = ctx.policy.cwd / ".localgravity" / "backups"
+        backup_dir = ctx.policy.cwd / ".axon" / "backups"
         backup_dir.mkdir(parents=True, exist_ok=True)
         rel = target.relative_to(ctx.policy.cwd).as_posix().replace("/", "__")
         (backup_dir / f"{rel}.{ctx.session.step}").write_bytes(target.read_bytes())
@@ -89,7 +89,7 @@ def list_dir(args: dict, ctx: ToolContext) -> ToolResult:
     base = target
     walker = base.rglob("*") if recursive else base.iterdir()
     for p in sorted(walker):
-        if ".git" in p.parts or ".localgravity" in p.parts:
+        if ".git" in p.parts or ".axon" in p.parts:
             continue
         rel = p.relative_to(base).as_posix()
         entries.append(rel + ("/" if p.is_dir() else ""))

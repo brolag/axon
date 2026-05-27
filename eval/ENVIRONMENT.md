@@ -13,7 +13,7 @@ aggressive quant some community reports use — and the harness sustains loops o
 - Ollama: 0.24.0
 - Endpoint: http://localhost:11434 (HTTP, stdlib urllib — no client library)
 - Python: 3.11.14
-- localgravity: 0.1.0 (PyYAML only runtime dependency)
+- axon: 0.1.0 (PyYAML only runtime dependency)
 
 ## Hardware
 - Machine: Mac16,7 (Apple Silicon, M4-class)

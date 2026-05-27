@@ -9,8 +9,8 @@ and verification all in the loop. Run it against a local Gemma 4 via Ollama:
 import tempfile
 from pathlib import Path
 
-from localgravity.artifacts import to_markdown
-from localgravity.loop import run_agent
+from axon.artifacts import to_markdown
+from axon.loop import run_agent
 
 BUGGY = "def add(a, b):\n    return a - b  # BUG: subtracts instead of adding\n"
 TEST = "from calc import add\n\n\ndef test_add():\n    assert add(2, 3) == 5\n"

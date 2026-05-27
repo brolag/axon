@@ -1,4 +1,4 @@
-"""PolicyEngine — the security core of localgravity.
+"""PolicyEngine — the security core of axon.
 
 Evaluates every tool action against a declarative policy (policy.yaml) and returns
 one of three verdicts: ALLOW, ASK, DENY. DENY always wins.

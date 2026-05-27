@@ -1,1 +1,2 @@
 === PASS 1: harness, 10 runs, temp 0 ===
+eval/sweep_pass1.sh: line 10: 45224 Terminated: 15          "$PY" eval/run_eval.py --model gemma4:26b --temp 0 --runs 10
