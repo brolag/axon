@@ -1,0 +1,211 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import { withBase } from '../../lib/paths';
+
+const categories = [
+  { name: 'bugfix', count: 4, tasks: 'A1 pagination, A2 dates, A3 mutable-default, A4 counter' },
+  { name: 'feature', count: 4, tasks: 'B1 slugify, B2 health, B3 cli_json, B4 retry' },
+  { name: 'refactor', count: 2, tasks: 'C1 extract-helper, C2 rename' },
+  { name: 'multistep', count: 2, tasks: 'D1 tax-rate, D2 logging' },
+];
+
+const matrix = [
+  { config: 'Gemma 4 + harness', purpose: 'The system under test.' },
+  { config: 'Gemma 4 + naive baseline (--naive)', purpose: 'Same security, no harness smarts. Isolates the harness effect.' },
+  { config: 'Qwen + harness', purpose: 'Same harness, different model. Isolates the model effect.' },
+];
+
+const honesty = [
+  'The task set is pre-registered with a git tag before any run, so the tasks cannot be tuned after seeing results.',
+  'All runs are reported. Raw JSONL goes in results/. No selective reporting.',
+  'No best-of-N as a headline. The headline is the full distribution.',
+  'Limits are declared: where Gemma fails (long loops, complex schemas, high temperature, aggressive quantization).',
+  'No claims about human productivity. The benchmark measures agent capability on controlled tasks, not developer speedup.',
+];
+
+const runCmds = `git tag bench-v1-preregistered            # freeze the task set first
+python eval/run_eval.py --model gemma4:26b --temp 0   --runs 30
+python eval/run_eval.py --model gemma4:26b --temp 0   --runs 30 --naive
+python eval/run_eval.py --model gemma4:26b --temp 0.7 --runs 30
+python eval/run_eval.py --model qwen3.6:35b --temp 0  --runs 30`;
+---
+
+<DocsLayout
+  title="Evaluation"
+  eyebrow="Gemma-Harness-Bench v1"
+  description="A pre-registered protocol that tests whether Gemma 4 sustains agentic coding loops under reproducible conditions, and isolates how much of the result is the harness."
+>
+  <h2>The claim under test</h2>
+  <p>
+    The claim is narrow on purpose. Not "Gemma 4 is better than people say." The
+    defensible version:
+  </p>
+  <blockquote class="claim">
+    With a purpose-built harness and under the reproducible conditions below, Gemma 4 26B
+    (Q4_K_M, local via Ollama) sustains agentic coding loops, including multi-step tool
+    chains, at a completion rate reported with a confidence interval. The community
+    consensus that "Gemma 4 fails tool-calling" likely reflects generic harnesses or
+    aggressive quantization, not the model. We document where it works and where it still
+    fails.
+  </blockquote>
+
+  <h2>12 tasks, 4 categories</h2>
+  <p>
+    The task set is private and synthetic, built to stay out of public training data
+    (anti-contamination). Each task is a frozen seed repo with an <code>input.md</code>
+    prompt, a <code>verify.sh</code> that exits 0 only if the task is solved (verification
+    by execution, not inspection), and a <code>meta.json</code> with the category and the
+    optimal step count. The tests are the executable spec.
+  </p>
+
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Category</th>
+          <th scope="col">Tasks</th>
+          <th scope="col">In the set</th>
+        </tr>
+      </thead>
+      <tbody>
+        {categories.map((c) => (
+          <tr>
+            <th scope="row"><code>{c.name}</code></th>
+            <td>{c.count}</td>
+            <td class="muted">{c.tasks}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <h2>The configuration matrix</h2>
+  <p>
+    Three configurations, each run 30 times per task (12 by 30 = 360 runs per
+    configuration; 30 sits above the central-limit threshold). Temperature is reported at
+    both 0 (deterministic baseline) and 0.7 (realistic use). Seeds are fixed and recorded
+    per run.
+  </p>
+
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Configuration</th>
+          <th scope="col">What it isolates</th>
+        </tr>
+      </thead>
+      <tbody>
+        {matrix.map((m) => (
+          <tr>
+            <th scope="row"><code>{m.config}</code></th>
+            <td class="muted">{m.purpose}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Harness vs naive: isolating the harness effect</h2>
+  <p>
+    The naive baseline (<code>--naive</code>) runs the same model with the same security
+    policy, but strips the harness smarts: no operating-loop structure, no efficiency
+    rules, no redundancy cache, no repetition cut, no context reminder. The gap between
+    "Gemma 4 + harness" and "Gemma 4 + naive" is the measured value the harness adds. The
+    Qwen configuration runs the same harness with a different model, isolating how much is
+    the model rather than the wiring.
+  </p>
+
+  <h2>Metrics, by category</h2>
+  <p>Reported per category, never as a single global headline:</p>
+  <ul>
+    <li><code>completion_rate</code> per category, with a Wilson confidence interval.</li>
+    <li><code>tool_call_success</code>, separating invalid_format from invalid_action.</li>
+    <li><code>median_steps</code> and IQR; <code>efficiency_ratio</code> = steps / optimal_steps.</li>
+    <li><code>latency</code> p50 and p90; <code>cost</code> = $0 API plus GPU-seconds (compute is not free).</li>
+    <li>Failure taxonomy: solved / wrong_solution / task_limit_exceeded / stalled / repetition_detected / harness_error.</li>
+  </ul>
+
+  <h2>Honesty rules</h2>
+  <p>The protocol is built to make cherry-picking impossible after the fact.</p>
+  <ol class="honesty">
+    {honesty.map((h) => (<li>{h}</li>))}
+  </ol>
+
+  <h2>Running the sweep</h2>
+  <CodeBlock code={runCmds} lang="bash" />
+
+  <div class="status-note">
+    <p>
+      <strong>Status.</strong> The harness is functional and verified end to end against
+      <code>gemma4:26b</code>: it fixes a failing test in 6 steps, autonomously. A smoke
+      run (n=1 per task, harness, temp 0) solved 12/12 across all four categories. That is
+      not evidence at n=1; it validates the pipeline and motivates the full sweep. Final
+      numbers go in <code>results/</code>.
+    </p>
+  </div>
+
+  <p>
+    Read the <a href={withBase('/docs/architecture')}>architecture</a> that this protocol
+    measures, or the <a href={withBase('/docs/safety')}>safety</a> policy every run shares.
+  </p>
+</DocsLayout>
+
+<style>
+  .claim {
+    margin: 1.4em 0;
+    padding: 1.1rem 1.4rem;
+    border-left: 3px solid var(--teal);
+    background: var(--cream-2);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: var(--ink);
+    max-width: 44rem;
+  }
+
+  .honesty {
+    counter-reset: h;
+    list-style: none;
+    padding: 0;
+    max-width: 44rem;
+  }
+
+  .honesty li {
+    counter-increment: h;
+    position: relative;
+    padding-left: 2.2rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .honesty li::before {
+    content: counter(h);
+    position: absolute;
+    left: 0;
+    top: 0.05em;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--peach);
+    color: var(--teal-deep);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  .status-note {
+    border: 1px solid var(--border-strong);
+    background: #fffdfa;
+    border-radius: var(--radius);
+    padding: 1.1rem 1.3rem;
+    margin: 1.8em 0;
+  }
+
+  .status-note p {
+    margin: 0;
+    max-width: none;
+  }
+</style>

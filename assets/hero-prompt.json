@@ -1,0 +1,25 @@
+{
+  "label": "axon-hero-neural-fibre-signal",
+  "tags": ["watercolor", "neural", "axon", "indie-mind", "open-source", "abstract"],
+  "concept": "A single stylized axon (a neuron's signal-carrying fibre) rendered as one flowing horizontal organic line with a few small circular synaptic nodes spaced along it, echoing the Indie Mind neural-spiral-with-circuit-nodes logo. A luminous warm signal pulse travels along the fibre from the left end toward the right end, leaving a soft glowing trail. Reads abstractly as 'the wiring that makes a local model think and act'. No brain shapes, no faces, no literal neurons-cluster cliche.",
+  "composition": {
+    "layout": "wide horizontal, single fibre crossing the frame with gentle curve, lots of empty breathing room above and below, off-center weight, generous negative space",
+    "focal_point": "the luminous signal pulse node, slightly right of center",
+    "text": "NONE — absolutely no text, no letters, no wordmark, no watermark"
+  },
+  "style": {
+    "medium": "soft flowing watercolor on textured paper, organic and premium, hand-painted feel with gentle bleeds and washes",
+    "reference": "match the provided Indie Mind watercolor reference image for palette, softness, and paper texture",
+    "mood": "calm, intelligent, organic, premium, quietly energetic"
+  },
+  "color_palette": {
+    "background": "warm cream #FDF8F3 with subtle soft watercolor washes",
+    "primary": "teal #2D5B66 for the axon fibre and nodes",
+    "ink": "dark ink #162A35 for the finest line accents",
+    "warm_accent": "peach #F5DDD0 around the glowing pulse",
+    "secondary": "soft watercolor blues and greens drifting in the background washes",
+    "pulse_glow": "light warm luminous accent (soft peach-to-cream highlight) on the travelling signal pulse"
+  },
+  "do_not": ["no text or letters", "no stock AI-brain cliche", "no glowing purple sci-fi gradients", "no corporate flat vector look", "no robots", "no circuit-board grids", "no neon", "no dark background"],
+  "vibe": "the wiring that makes a local model think and act — a quiet luminous signal flowing through an organic neural fibre"
+}

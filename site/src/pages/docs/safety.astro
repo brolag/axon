@@ -1,0 +1,148 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import { withBase } from '../../lib/paths';
+
+const denyLayer = `shell:
+  # ALWAYS blocked, non-overridable hardening layer. Evaluated first.
+  deny_patterns:
+    - 'recursive rm of root / home / glob (any flag order)'
+    - 'dd if='
+    - ':(){ :|:& };:'        # fork bomb
+    - 'mkfs'
+    - 'shutdown | reboot | halt | poweroff'
+    - 'chmod -R 777'
+    - 'curl ... | sh'        # remote code into a shell
+    - 'wget ... | sh'
+    - '> /dev/sd[a-z]'
+    - 'git push'             # never push autonomously`;
+
+const denyPaths = `deny_paths:
+  - ".git/**"
+  - ".env*"
+  - "**/*.pem"
+  - "**/*.key"
+  - "**/id_rsa*"
+  - "**/.ssh/**"
+  - "**/.axon/**"   # the harness does not edit itself`;
+
+const order = [
+  { layer: 'Deny (hardening)', detail: 'Non-overridable regex layer. Evaluated first. No config can turn a match into ALLOW.' },
+  { layer: 'Allow', detail: 'Safe inspection and verification: ls, cat, pytest, ruff, git status, npm test.' },
+  { layer: 'Ask', detail: 'Reversible but sensitive: pip install, git commit, mv, cp, rm. In non-interactive mode this becomes DENY.' },
+  { layer: 'Default', detail: 'No rule matched. Conservative default is ask.' },
+];
+---
+
+<DocsLayout
+  title="Safety"
+  eyebrow="The security core"
+  description="The model is treated as untrusted input. Every shell command and file path passes through the PolicyEngine. No security decision is delegated to the prompt."
+>
+  <h2>The premise: the model is untrusted input</h2>
+  <p>
+    A file's contents or a command's origin never relaxes the policy. Security does not
+    live in the system prompt, because a prompt can be talked around. It lives in the
+    <code>PolicyEngine</code> (<code>policy.py</code>) and the filesystem jail, evaluated in
+    code before any tool runs. The system prompt does carry a security framing (the agent
+    is told it operates as a senior security engineer, which measurably reduces vulnerable
+    output) but that framing is a nudge, not the control.
+  </p>
+
+  <h2>Three verdicts, evaluated in order</h2>
+  <p>
+    Every action resolves to one of three verdicts: <strong>ALLOW</strong>,
+    <strong>ASK</strong>, or <strong>DENY</strong>. DENY always wins. The order matters:
+    the hardening deny layer runs first, so it cannot be overridden by a later allow rule.
+  </p>
+
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Layer</th>
+          <th scope="col">What it covers</th>
+        </tr>
+      </thead>
+      <tbody>
+        {order.map((o) => (
+          <tr>
+            <th scope="row">{o.layer}</th>
+            <td class="muted">{o.detail}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <h2>The non-overridable deny layer</h2>
+  <p>
+    A fixed set of patterns is blocked regardless of how a command is phrased, and this
+    layer is evaluated first. No configuration can promote a match to ALLOW. This is the
+    hardening floor.
+  </p>
+  <CodeBlock code={denyLayer} lang="yaml" label="policy.yaml (shell.deny_patterns)" />
+  <p class="muted">
+    The regexes catch the obvious. For autonomous runs, wrap the process in an OS sandbox
+    (firejail or a container) with no network. The regexes catch what is phrased plainly;
+    the sandbox catches what they do not.
+  </p>
+
+  <h2>The filesystem jail</h2>
+  <p>
+    Every path is resolved against the workspace root and must stay inside it. Path
+    traversal (<code>../</code>) and symlink escape are rejected by resolving the real
+    path and checking it is within the jail. A write to a path that escapes the workspace
+    raises a hard error and aborts the action.
+  </p>
+
+  <h2>deny_paths: never readable, never writable</h2>
+  <p>
+    Inside the jail, a deny list protects secrets and the version-control internals. These
+    paths return DENY on both read and write, matched against the relative path and the
+    bare filename.
+  </p>
+  <CodeBlock code={denyPaths} lang="yaml" label="policy.yaml (deny_paths)" />
+
+  <h2>ASK becomes DENY in non-interactive mode</h2>
+  <p>
+    In CI or under <code>--yolo</code>, the engine runs non-interactive. Anything that
+    would prompt a human is downgraded from ASK to DENY. Nothing that needs human
+    permission gets auto-approved. This is the safe default for autonomous runs: the agent
+    can only do what is explicitly allowed.
+  </p>
+
+  <h2>Backup before overwrite</h2>
+  <p>
+    Files are backed up before they are overwritten. Writes are also capped at 1 MB per
+    file. There is no blind destruction: a bad write is recoverable.
+  </p>
+
+  <div class="note">
+    <p>
+      <strong>Recommended for autonomous runs.</strong> Run axon inside an OS sandbox with
+      no network. The PolicyEngine is the in-process guard; the sandbox is the perimeter.
+      Defence in depth, not either-or.
+    </p>
+  </div>
+
+  <p>
+    See how these controls fit the loop in <a href={withBase('/docs/architecture')}>architecture</a>,
+    or how runs are measured in <a href={withBase('/docs/evaluation')}>evaluation</a>.
+  </p>
+</DocsLayout>
+
+<style>
+  .note {
+    border: 1px solid var(--peach-line);
+    background: linear-gradient(180deg, rgba(245, 221, 208, 0.4), rgba(245, 221, 208, 0.18));
+    border-radius: var(--radius);
+    padding: 1.1rem 1.3rem;
+    margin: 1.8em 0;
+  }
+
+  .note p {
+    margin: 0;
+    max-width: none;
+  }
+</style>

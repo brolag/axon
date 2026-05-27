@@ -1,0 +1,110 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import { withBase } from '../../lib/paths';
+
+const setup = `git clone https://github.com/brolag/axon
+cd axon
+./install.sh        # checks Python 3.10+, Ollama, pulls the model, installs, runs tests
+
+# or by hand:
+pip install -e ".[dev]"
+pytest -q`;
+
+const tests = `pytest -q   # 55 tests; the security suite (test_policy.py) is the most important.`;
+
+const newTool = `# A handler is (args, ctx) -> ToolResult.
+def my_tool(args, ctx):
+    # validate args, do the work, return a ToolResult
+    return ToolResult(content="...")
+
+# 1. register it in axon/tools/__init__.py (HANDLERS + SCHEMAS)
+# 2. let dispatch.py handle caching, repetition and the transcript
+# 3. add a security test in tests/test_policy.py if it touches shell or paths`;
+
+const areas = [
+  { title: 'The security suite is the priority', body: 'test_policy.py is the most important file in the repo. New shell or filesystem behaviour needs a test that proves a hostile command or path is still denied.' },
+  { title: 'Stay framework-free', body: 'No LangChain, no agent framework. The value of axon is that the harness is readable end to end. New dependencies need a strong reason; PyYAML is the only runtime one.' },
+  { title: 'Eval is pre-registered', body: 'Do not tune the task set to results. Changing Gemma-Harness-Bench means a new version and a new git tag, never an edit after a run.' },
+  { title: 'The model is untrusted input', body: 'Never move a security decision into the prompt. Controls live in the PolicyEngine and the jail, in code, evaluated before a tool runs.' },
+];
+---
+
+<DocsLayout
+  title="Contributing"
+  eyebrow="Get involved"
+  description="axon is a study in AI engineering, kept deliberately small and readable. Contributions that sharpen the harness, the safety core, or the eval are welcome."
+>
+  <h2>Set up</h2>
+  <p>
+    Python 3.10 or newer and a running Ollama with Gemma 4. The installer checks
+    prerequisites, pulls the model, installs the package and runs the tests.
+  </p>
+  <CodeBlock code={setup} lang="bash" />
+
+  <h2>Run the tests</h2>
+  <p>
+    The suite runs without any model calls, so it is fast and deterministic. The security
+    suite is the one that must always be green.
+  </p>
+  <CodeBlock code={tests} lang="bash" />
+
+  <h2>Principles to keep</h2>
+  <div class="contrib-grid">
+    {areas.map((a) => (
+      <div class="card contrib">
+        <h3>{a.title}</h3>
+        <p class="muted">{a.body}</p>
+      </div>
+    ))}
+  </div>
+
+  <h2>Adding a tool</h2>
+  <p>
+    A tool is a handler with the signature <code>(args, ctx) -&gt; ToolResult</code>,
+    registered in <code>axon/tools/__init__.py</code> with its JSON schema. The dispatcher
+    gives you caching, repetition handling and the transcript for free. Anything touching
+    shell or paths must go through the <a href={withBase('/docs/safety')}>PolicyEngine</a>.
+  </p>
+  <CodeBlock code={newTool} lang="python" />
+
+  <h2>Pull requests</h2>
+  <ul>
+    <li>Keep the diff focused. Small, reviewable changes over large rewrites.</li>
+    <li>Add or update tests, especially for anything in the security path.</li>
+    <li>Run <code>pytest -q</code> before opening the PR; all 55 tests must pass.</li>
+    <li>Match the existing voice in docs and comments: direct and technical, no hype.</li>
+  </ul>
+
+  <h2>License</h2>
+  <p>
+    axon is Apache-2.0. Contributions are accepted under the same license. It is the
+    flagship artifact of Alfredo Bonilla / Indie Mind's Google Developer Expert portfolio,
+    built to show that a managed Google brain can be rebuilt from open Google parts.
+  </p>
+
+  <p>
+    Open an issue or a pull request on
+    <a href="https://github.com/brolag/axon" rel="noopener">GitHub</a>.
+  </p>
+</DocsLayout>
+
+<style>
+  .contrib-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: 1rem;
+    margin: 1.6em 0;
+  }
+
+  .contrib h3 {
+    margin: 0 0 0.4rem;
+    font-size: 1.05rem;
+  }
+
+  .contrib p {
+    margin: 0;
+    font-size: 0.94rem;
+    line-height: 1.55;
+  }
+</style>

@@ -1,0 +1,116 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import { withBase } from '../../lib/paths';
+
+const usage = `axon "<task>" [options]`;
+
+const example = `axon "Fix the failing test in test_calc.py and confirm it passes" \\
+  --cwd ./myproject \\
+  --model gemma4:26b \\
+  --temperature 0`;
+
+const yoloExample = `# Autonomous: ASK becomes DENY, no human prompts.
+axon "Make the test suite pass" --cwd ./repo --yolo`;
+
+const flags = [
+  { flag: 'task', arg: '(positional)', def: 'required', desc: 'The task for the agent, in quotes.' },
+  { flag: '--cwd', arg: 'PATH', def: '.', desc: 'Workspace root and filesystem jail. The agent cannot escape it.' },
+  { flag: '--model', arg: 'NAME', def: 'gemma4:26b', desc: 'Ollama model tag.' },
+  { flag: '--host', arg: 'URL', def: 'localhost:11434', desc: 'Ollama host, for a remote Ollama instance.' },
+  { flag: '--temperature', arg: 'FLOAT', def: '0.0', desc: 'Sampling temperature. 0 is deterministic.' },
+  { flag: '--policy', arg: 'PATH', def: 'policy.yaml', desc: 'Path to the safety policy file.' },
+  { flag: '--max-steps', arg: 'INT', def: 'policy value', desc: 'Override the loop step ceiling.' },
+  { flag: '--yolo', arg: '(flag)', def: 'off', desc: 'Non-interactive. ASK becomes DENY, no prompts. The safe autonomous default.' },
+  { flag: '--identity', arg: 'TEXT', def: 'maintenance agent', desc: 'The injectable role in the system prompt. The security scaffold stays fixed.' },
+];
+
+const exits = [
+  { code: '0', meaning: 'The agent called done() with a verified result.' },
+  { code: '1', meaning: 'The loop ended without a verified done (max_steps, stalled, repetition).' },
+  { code: '2', meaning: 'Preflight failed: Ollama or the model is not reachable.' },
+];
+---
+
+<DocsLayout
+  title="CLI reference"
+  eyebrow="Command line"
+  description="The axon command takes a task and a workspace, runs the agentic loop, and prints a structured transcript. One entry point, sensible defaults."
+>
+  <h2>Usage</h2>
+  <CodeBlock code={usage} lang="text" label="synopsis" />
+
+  <p>
+    Before the loop starts, axon runs a preflight: it checks that Ollama is reachable and
+    the model is available, and fails fast with a friendly message if not. On exit it
+    prints the transcript to stderr and a one-line result to stdout.
+  </p>
+
+  <h2>A typical run</h2>
+  <CodeBlock code={example} lang="bash" />
+
+  <h2>Options</h2>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Flag</th>
+          <th scope="col">Value</th>
+          <th scope="col">Default</th>
+          <th scope="col">Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        {flags.map((f) => (
+          <tr>
+            <th scope="row"><code>{f.flag}</code></th>
+            <td><code>{f.arg}</code></td>
+            <td class="muted">{f.def}</td>
+            <td class="muted">{f.desc}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Autonomous mode</h2>
+  <p>
+    Pass <code>--yolo</code> for unattended runs. Despite the name it is the conservative
+    mode for automation: with no human to answer prompts, every ASK verdict is downgraded
+    to DENY. The agent can only do what the policy explicitly allows.
+  </p>
+  <CodeBlock code={yoloExample} lang="bash" />
+  <p class="muted">
+    For unattended runs, wrap the process in an OS sandbox with no network. See
+    <a href={withBase('/docs/safety')}>safety</a>.
+  </p>
+
+  <h2>Exit codes</h2>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Code</th>
+          <th scope="col">Meaning</th>
+        </tr>
+      </thead>
+      <tbody>
+        {exits.map((e) => (
+          <tr>
+            <th scope="row"><code>{e.code}</code></th>
+            <td class="muted">{e.meaning}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Driving it from Python</h2>
+  <p>
+    The CLI wraps <code>axon.loop.run_agent</code>. Call it directly when you want to set
+    a custom approval callback, inject project conventions, or read the structured
+    <code>LoopResult</code>. See the example in the
+    <a href="https://github.com/brolag/axon" rel="noopener">repository</a> at
+    <code>examples/fix_bug.py</code>.
+  </p>
+</DocsLayout>

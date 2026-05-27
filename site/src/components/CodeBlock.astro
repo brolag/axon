@@ -1,0 +1,133 @@
+---
+// High-contrast code block with an accessible copy button.
+// Pass the raw code via the `code` prop (kept out of the rendered text node so the
+// copy button copies exactly what was passed). `lang` is a label only.
+interface Props {
+  code: string;
+  lang?: string;
+  label?: string;
+}
+const { code, lang = 'bash', label } = Astro.props;
+const lines = code.replace(/\n$/, '').split('\n');
+---
+
+<figure class="code">
+  <figcaption class="code-bar">
+    <span class="code-lang">{label ?? lang}</span>
+    <button
+      class="copy-btn"
+      type="button"
+      data-code={code}
+      aria-label="Copy code to clipboard"
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="9" y="9" width="11" height="11" rx="2.5" stroke="currentColor" stroke-width="2" />
+        <path d="M5 15V5a2 2 0 0 1 2-2h10" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      </svg>
+      <span class="copy-label">Copy</span>
+    </button>
+  </figcaption>
+  <pre><code>{lines.map((line) => (<span class="code-line">{line || ' '}</span>))}</code></pre>
+</figure>
+
+<style>
+  .code {
+    margin: 1.6em 0;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--code-line);
+    background: var(--code-bg);
+  }
+
+  .code-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.55rem 0.5rem 1rem;
+    background: #11202a;
+    border-bottom: 1px solid var(--code-line);
+  }
+
+  .code-lang {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #8fb6bd;
+  }
+
+  .copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    color: #cfe0e3;
+    background: transparent;
+    border: 1px solid var(--code-line);
+    border-radius: 7px;
+    padding: 0.32rem 0.6rem;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .copy-btn:hover {
+    background: #1c2f38;
+    color: #fff;
+    border-color: #3a5159;
+  }
+
+  .copy-btn.is-copied {
+    color: #bfe3c8;
+    border-color: #3a5e49;
+  }
+
+  pre {
+    margin: 0;
+    padding: 1.05rem 1.2rem;
+    overflow-x: auto;
+    line-height: 1.65;
+  }
+
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86rem;
+    color: var(--code-fg);
+  }
+
+  .code-line {
+    display: block;
+    white-space: pre;
+  }
+</style>
+
+<script>
+  // Delegated, idempotent copy handler (one listener for the whole page).
+  if (!(window as any).__axonCopyBound) {
+    (window as any).__axonCopyBound = true;
+    document.addEventListener('click', async (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.copy-btn');
+      if (!btn) return;
+      const code = btn.getAttribute('data-code') ?? '';
+      const labelEl = btn.querySelector('.copy-label');
+      try {
+        await navigator.clipboard.writeText(code);
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = code;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      btn.classList.add('is-copied');
+      if (labelEl) labelEl.textContent = 'Copied';
+      window.setTimeout(() => {
+        btn.classList.remove('is-copied');
+        if (labelEl) labelEl.textContent = 'Copy';
+      }, 1600);
+    });
+  }
+</script>

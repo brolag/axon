@@ -1,0 +1,347 @@
+/* axon docs - Indie Mind brand system
+   Colors:  cream #FDF8F3 (bg), teal #2D5B66 (primary), ink #162A35 (text),
+            peach #F5DDD0 (warm accent). Soft watercolor blues/greens for accents only.
+   Type:    Plus Jakarta Sans (body + headings), JetBrains Mono (code).
+   Contrast verified WCAG 2.2 AA: ink/cream 14.05, teal/cream 7.11, muted/cream 5.82. */
+
+:root {
+  --cream: #fdf8f3;
+  --cream-2: #f7efe6;
+  --teal: #2d5b66;
+  --teal-deep: #214650;
+  --ink: #162a35;
+  --ink-muted: #54646c;
+  --peach: #f5ddd0;
+  --peach-line: #eccdbb;
+
+  /* watercolor accents - used sparingly, never behind body text */
+  --wash-blue: #b9d4d8;
+  --wash-green: #c2d8c6;
+  --wash-teal: #9fc1c4;
+
+  --border: #e7ddd1;
+  --border-strong: #d8cbbb;
+
+  --code-bg: #16252e;
+  --code-fg: #e8eef0;
+  --code-line: #2b3d47;
+
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
+
+  --maxw: 72rem;
+  --readw: 46rem;
+  --radius: 14px;
+  --radius-sm: 9px;
+
+  --space-1: 0.5rem;
+  --space-2: 1rem;
+  --space-3: 1.5rem;
+  --space-4: 2.5rem;
+  --space-5: 4rem;
+  --space-6: 6rem;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: 1.0625rem;
+  line-height: 1.7;
+  color: var(--ink);
+  background: var(--cream);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Type hierarchy --------------------------------------------------------- */
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 700;
+  line-height: 1.18;
+  letter-spacing: -0.018em;
+  color: var(--ink);
+  margin: 0 0 0.6em;
+}
+
+h1 {
+  font-weight: 800;
+  font-size: clamp(2.1rem, 5vw, 3.2rem);
+  letter-spacing: -0.03em;
+}
+
+h2 {
+  font-size: clamp(1.55rem, 3vw, 2.1rem);
+  margin-top: 2.2em;
+}
+
+h3 {
+  font-weight: 600;
+  font-size: 1.25rem;
+  margin-top: 1.8em;
+}
+
+h4 {
+  font-weight: 600;
+  font-size: 1.02rem;
+  color: var(--teal);
+  text-transform: none;
+}
+
+p {
+  margin: 0 0 1.1em;
+  max-width: var(--readw);
+}
+
+a {
+  color: var(--teal);
+  text-decoration: none;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible {
+  outline: 2.5px solid var(--teal);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+strong {
+  font-weight: 600;
+}
+
+ul,
+ol {
+  max-width: var(--readw);
+  padding-left: 1.3rem;
+  margin: 0 0 1.2em;
+}
+
+li {
+  margin-bottom: 0.4em;
+}
+
+li::marker {
+  color: var(--teal);
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: var(--space-4) 0;
+}
+
+small {
+  color: var(--ink-muted);
+  font-size: 0.85rem;
+}
+
+/* Layout ----------------------------------------------------------------- */
+.wrap {
+  max-width: var(--maxw);
+  margin-inline: auto;
+  padding-inline: clamp(1.1rem, 4vw, 2.5rem);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--teal);
+  font-weight: 500;
+  margin: 0 0 0.9rem;
+}
+
+/* Inline code ------------------------------------------------------------ */
+:not(pre) > code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  background: var(--cream-2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.12em 0.4em;
+  color: var(--teal-deep);
+}
+
+/* Tables ----------------------------------------------------------------- */
+.table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin: 1.6em 0;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.95rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+thead th {
+  background: var(--cream-2);
+  font-weight: 600;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  border-bottom: 1px solid var(--border-strong);
+}
+
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+td code {
+  white-space: nowrap;
+}
+
+.cell-managed {
+  color: var(--ink-muted);
+}
+
+.cell-axon {
+  color: var(--teal-deep);
+  font-weight: 500;
+}
+
+/* Buttons ---------------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.97rem;
+  padding: 0.7rem 1.3rem;
+  border-radius: 999px;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: var(--teal);
+  color: var(--cream);
+}
+
+.btn-primary:hover {
+  background: var(--teal-deep);
+  text-decoration: none;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--teal-deep);
+  border-color: var(--border-strong);
+}
+
+.btn-ghost:hover {
+  border-color: var(--teal);
+  background: var(--cream-2);
+  text-decoration: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .btn:active {
+    transform: translateY(1px);
+  }
+}
+
+/* Cards ------------------------------------------------------------------ */
+.card {
+  background: #fffdfa;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem 1.6rem;
+}
+
+/* Section divider: a thin watercolor band (accent only) ------------------ */
+.divider-wash {
+  height: 2px;
+  border: 0;
+  margin: var(--space-5) 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--wash-teal) 18%,
+    var(--wash-blue) 50%,
+    var(--wash-green) 82%,
+    transparent
+  );
+  opacity: 0.55;
+}
+
+/* Utility ---------------------------------------------------------------- */
+.lede {
+  font-size: 1.22rem;
+  line-height: 1.6;
+  color: var(--ink);
+  max-width: 40rem;
+}
+
+.muted {
+  color: var(--ink-muted);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -3rem;
+  z-index: 100;
+  background: var(--teal);
+  color: var(--cream);
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  transition: top 0.16s ease;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}

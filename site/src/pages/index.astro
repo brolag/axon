@@ -1,0 +1,361 @@
+---
+import Base from '../layouts/Base.astro';
+import AxonLine from '../components/AxonLine.astro';
+import CodeBlock from '../components/CodeBlock.astro';
+import { withBase } from '../lib/paths';
+
+const heroImg = withBase('/assets/hero.png');
+
+const comparison = [
+  {
+    dim: 'Where the brain runs',
+    managed: 'Google cloud, behind the Antigravity SDK',
+    axon: 'Your laptop, Gemma 4 via Ollama',
+  },
+  {
+    dim: 'Model',
+    managed: 'Gemini (closed weights)',
+    axon: 'Gemma 4 26B (Apache-2.0 open weights)',
+  },
+  {
+    dim: 'Code egress',
+    managed: 'Your code leaves the machine',
+    axon: 'Nothing leaves. No network call to a model API',
+  },
+  {
+    dim: 'The agentic pattern',
+    managed: 'plan, use tools, verify',
+    axon: 'plan, use tools, verify (same three beats)',
+  },
+  {
+    dim: 'Harness',
+    managed: 'Proprietary, not inspectable',
+    axon: 'Framework-free Python you can read end to end',
+  },
+  {
+    dim: 'Safety',
+    managed: 'Provider-side policy',
+    axon: 'Local PolicyEngine, filesystem jail, non-overridable deny layer',
+  },
+  {
+    dim: 'Cost per run',
+    managed: 'API metering',
+    axon: '$0 API. You pay GPU-seconds',
+  },
+];
+
+const installCode = `# 1. Have Ollama running with Gemma 4
+ollama pull gemma4:26b
+
+# 2. Install (PyYAML is the only runtime dependency)
+pip install -e .
+
+# 3. Run the agent against a workspace
+axon "Fix the failing test in test_calc.py and confirm it passes" --cwd ./myproject`;
+
+const quickstartCode = `from axon.loop import run_agent
+from axon.artifacts import to_markdown
+
+result = run_agent(
+    task="test_calc.py fails. Find the bug, fix it, "
+         "and confirm the test passes by running it.",
+    cwd="./myproject",
+    identity="You are a bug-fixing agent for a small Python project.",
+    interactive=False,   # autonomous: ASK becomes DENY
+)
+
+print(to_markdown(result))
+print(f"result: {result.reason} in {result.steps} steps, "
+      f"verified={result.done}")`;
+---
+
+<Base
+  title="axon"
+  description="A framework-free Python harness that recreates Google Antigravity's plan, tool, verify pattern running Gemma 4 locally via Ollama. No Gemini API, no cloud, no code egress."
+>
+  <!-- Hero ------------------------------------------------------------- -->
+  <section class="hero">
+    <div class="hero-band" aria-hidden="true">
+      <div class="hero-art">
+        <img
+          src={heroImg}
+          alt=""
+          class="hero-img"
+          loading="eager"
+          onerror="this.classList.add('is-missing')"
+        />
+      </div>
+      <div class="hero-axon"><AxonLine /></div>
+    </div>
+
+    <div class="wrap hero-content">
+      <p class="eyebrow">Local agentic coding</p>
+      <h1 class="hero-title">
+        The wiring that makes a local model think and act.
+      </h1>
+      <p class="lede hero-lede">
+        axon is a framework-free Python harness that recreates Google Antigravity's
+        agentic pattern: plan, use tools, verify. It runs Gemma 4 entirely on your
+        machine through Ollama, so no Gemini API, no cloud, and no code egress.
+      </p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href={withBase('/docs/architecture')}>Read the architecture</a>
+        <a class="btn btn-ghost" href="https://github.com/brolag/axon" rel="noopener">View on GitHub</a>
+      </div>
+      <p class="hero-meta">
+        <code>gemma4:26b</code> &middot; Apache-2.0 &middot; one runtime dependency
+      </p>
+    </div>
+  </section>
+
+  <!-- Pitch ------------------------------------------------------------ -->
+  <section class="wrap section">
+    <div class="pitch">
+      <p class="lede">
+        Antigravity's brain is not the SDK. It is a three-beat pattern that is public
+        and documented: plan, call tools, verify the result.
+      </p>
+      <p>
+        axon shows that pattern naked. No LangChain, no wrapper. The agent is the
+        runtime: it plans, calls tools (read and write files, run shell, run tests),
+        executes, verifies by running the tests itself, and repeats until the task is
+        done or a cut fires. The point is to demonstrate that a better harness is what
+        turns an open-weight model into an agent that does the work, not an autocomplete
+        that suggests.
+      </p>
+    </div>
+  </section>
+
+  <hr class="divider-wash" />
+
+  <!-- Comparison ------------------------------------------------------- -->
+  <section class="wrap section">
+    <p class="eyebrow">The honest comparison</p>
+    <h2>Antigravity (managed) vs axon (local)</h2>
+    <p class="muted">
+      Same three-beat pattern, different substrate. axon trades a managed cloud brain for
+      one that runs on hardware you control.
+    </p>
+    <div class="table-scroll">
+      <table>
+        <caption class="visually-hidden">
+          Comparison of Google Antigravity (managed) and axon (local) across seven dimensions.
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Dimension</th>
+            <th scope="col">Antigravity (managed)</th>
+            <th scope="col">axon (local)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {comparison.map((row) => (
+            <tr>
+              <th scope="row">{row.dim}</th>
+              <td class="cell-managed">{row.managed}</td>
+              <td class="cell-axon">{row.axon}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="divider-wash" />
+
+  <!-- Install ---------------------------------------------------------- -->
+  <section class="wrap section">
+    <p class="eyebrow">Three steps</p>
+    <h2>Install</h2>
+    <div class="steps">
+      <ol class="step-list">
+        <li>
+          <span class="step-n" aria-hidden="true">1</span>
+          <div>
+            <h3>Pull the model</h3>
+            <p class="muted">Gemma 4 26B runs locally through Ollama. Pull it once.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-n" aria-hidden="true">2</span>
+          <div>
+            <h3>Install the package</h3>
+            <p class="muted">PyYAML is the only runtime dependency. Ollama is reached over HTTP.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-n" aria-hidden="true">3</span>
+          <div>
+            <h3>Run the agent</h3>
+            <p class="muted">Point <code>axon</code> at a workspace and give it a task.</p>
+          </div>
+        </li>
+      </ol>
+      <CodeBlock code={installCode} lang="bash" />
+    </div>
+  </section>
+
+  <hr class="divider-wash" />
+
+  <!-- Quickstart ------------------------------------------------------- -->
+  <section class="wrap section">
+    <p class="eyebrow">Quickstart</p>
+    <h2>Drive it from Python</h2>
+    <p class="muted">
+      The CLI is one entry point. The loop is also a function you can call directly and
+      inspect the structured transcript it returns.
+    </p>
+    <CodeBlock code={quickstartCode} lang="python" />
+    <p>
+      Read how the loop works in the
+      <a href={withBase('/docs/architecture')}>architecture</a> page, or how every command
+      and path is gated in <a href={withBase('/docs/safety')}>safety</a>.
+    </p>
+  </section>
+</Base>
+
+<style>
+  .hero {
+    position: relative;
+    padding-bottom: var(--space-4);
+  }
+
+  .hero-band {
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 100%;
+    overflow: hidden;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .hero-art {
+    position: absolute;
+    inset: 0;
+  }
+
+  /* hero image fills the band; fallback watercolor gradient if it 404s */
+  .hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    opacity: 0.34;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.9), transparent 92%);
+    -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.9), transparent 92%);
+  }
+
+  .hero-img.is-missing {
+    display: none;
+  }
+
+  /* fallback gradient sits behind the image; visible when image is hidden */
+  .hero-art::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(60% 70% at 12% 10%, rgba(159, 193, 196, 0.55), transparent 60%),
+      radial-gradient(55% 65% at 88% 0%, rgba(185, 212, 216, 0.5), transparent 60%),
+      radial-gradient(70% 80% at 60% -10%, rgba(194, 216, 198, 0.45), transparent 65%);
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 1), transparent 88%);
+    -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 1), transparent 88%);
+  }
+
+  .hero-axon {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 8%;
+    opacity: 0.85;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    padding-top: clamp(3rem, 8vw, 6rem);
+  }
+
+  .hero-title {
+    max-width: 16ch;
+    margin-bottom: 0.6em;
+  }
+
+  .hero-lede {
+    max-width: 44rem;
+    margin-bottom: 1.8rem;
+  }
+
+  .hero-cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    margin-bottom: 1.4rem;
+  }
+
+  .hero-meta {
+    font-size: 0.9rem;
+    color: var(--ink-muted);
+  }
+
+  .section {
+    padding-block: var(--space-2);
+  }
+
+  .pitch {
+    max-width: 44rem;
+  }
+
+  /* install steps */
+  .steps {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: 2.5rem;
+    align-items: start;
+  }
+
+  .step-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 1.4rem;
+  }
+
+  .step-list li {
+    display: flex;
+    gap: 1rem;
+    margin: 0;
+  }
+
+  .step-n {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    border-radius: 50%;
+    background: var(--peach);
+    color: var(--teal-deep);
+    font-weight: 700;
+    font-size: 0.95rem;
+    font-family: var(--font-mono);
+  }
+
+  .step-list h3 {
+    margin: 0.1rem 0 0.2rem;
+    font-size: 1.08rem;
+  }
+
+  .step-list p {
+    margin: 0;
+    font-size: 0.96rem;
+  }
+
+  @media (max-width: 820px) {
+    .steps {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+  }
+</style>

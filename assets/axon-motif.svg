@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 160" width="1200" height="160" role="img" aria-label="Axon neural fibre with a glowing signal pulse">
+  <title>axon — the wiring that makes a local model think and act</title>
+
+  <defs>
+    <!-- soft glow for the pulse node -->
+    <radialGradient id="pulseGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#F5DDD0" stop-opacity="0.95"/>
+      <stop offset="45%" stop-color="#F5DDD0" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#F5DDD0" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- transparent background; designed to sit on cream #FDF8F3 -->
+
+  <!-- the axon fibre: one thin organic line crossing the frame -->
+  <path d="M 40 80
+           C 200 80, 260 56, 420 56
+           S 640 104, 800 104
+           S 1020 64, 1160 64"
+        fill="none"
+        stroke="#2D5B66"
+        stroke-width="2.5"
+        stroke-linecap="round"/>
+
+  <!-- resting synaptic nodes along the fibre -->
+  <circle cx="180" cy="71" r="6" fill="#FDF8F3" stroke="#2D5B66" stroke-width="2.5"/>
+  <circle cx="420" cy="56" r="6" fill="#FDF8F3" stroke="#2D5B66" stroke-width="2.5"/>
+  <circle cx="980" cy="74" r="6" fill="#FDF8F3" stroke="#2D5B66" stroke-width="2.5"/>
+  <circle cx="1160" cy="64" r="6" fill="#FDF8F3" stroke="#2D5B66" stroke-width="2.5"/>
+
+  <!-- the luminous signal pulse, travelling along the fibre -->
+  <circle cx="700" cy="100" r="34" fill="url(#pulseGlow)"/>
+  <circle cx="700" cy="100" r="9"  fill="#F5DDD0" stroke="#2D5B66" stroke-width="2.5"/>
+  <circle cx="700" cy="100" r="3.5" fill="#162A35"/>
+</svg>

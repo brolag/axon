@@ -1,0 +1,139 @@
+---
+import { withBase } from '../lib/paths';
+const path = Astro.url.pathname.replace(/\/$/, '');
+const nav = [
+  { href: '/docs/architecture', label: 'Architecture' },
+  { href: '/docs/safety', label: 'Safety' },
+  { href: '/docs/evaluation', label: 'Evaluation' },
+  { href: '/docs/cli', label: 'CLI' },
+  { href: '/docs/contributing', label: 'Contributing' },
+];
+const isActive = (href: string) => path.endsWith(href);
+---
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href={withBase('/')} aria-label="axon home">
+      <span class="brand-mark" aria-hidden="true">
+        <svg width="26" height="26" viewBox="0 0 32 32" fill="none">
+          <path d="M3 22 C 9 22, 11 11, 17 11 S 25 19, 29 12" stroke="#2d5b66" stroke-width="2" stroke-linecap="round" />
+          <circle cx="3" cy="22" r="2.6" fill="#2d5b66" />
+          <circle cx="17" cy="11" r="3" fill="#f5ddd0" stroke="#2d5b66" stroke-width="1.6" />
+          <circle cx="29" cy="12" r="2.6" fill="#9fc1c4" />
+        </svg>
+      </span>
+      <span class="brand-name">axon</span>
+    </a>
+
+    <nav class="site-nav" aria-label="Primary">
+      <ul>
+        {nav.map((item) => (
+          <li>
+            <a
+              href={withBase(item.href)}
+              aria-current={isActive(item.href) ? 'page' : undefined}
+            >
+              {item.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <a class="repo-link" href="https://github.com/brolag/axon" rel="noopener">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.49l-.01-1.7c-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.62.07-.62 1 .07 1.53 1.06 1.53 1.06.89 1.56 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.37-2.22-.26-4.55-1.14-4.55-5.07 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.7 0 0 .84-.28 2.75 1.05a9.4 9.4 0 0 1 5 0c1.91-1.33 2.75-1.05 2.75-1.05.55 1.4.2 2.44.1 2.7.64.72 1.03 1.63 1.03 2.75 0 3.94-2.34 4.8-4.57 5.06.36.32.68.94.68 1.9l-.01 2.82c0 .27.18.6.69.49A10.02 10.02 0 0 0 22 12.25C22 6.58 17.52 2 12 2Z" />
+      </svg>
+      <span>GitHub</span>
+    </a>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: rgba(253, 248, 243, 0.86);
+    backdrop-filter: saturate(140%) blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    height: 64px;
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .brand-mark {
+    line-height: 0;
+  }
+
+  .brand-name {
+    font-weight: 700;
+    font-size: 1.18rem;
+    letter-spacing: -0.02em;
+  }
+
+  .site-nav {
+    margin-left: auto;
+  }
+
+  .site-nav ul {
+    display: flex;
+    gap: 0.4rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .site-nav a {
+    display: inline-block;
+    padding: 0.4rem 0.7rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .site-nav a:hover {
+    background: var(--cream-2);
+    text-decoration: none;
+  }
+
+  .site-nav a[aria-current='page'] {
+    color: var(--teal-deep);
+    background: var(--peach);
+  }
+
+  .repo-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--ink);
+    font-size: 0.92rem;
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .repo-link:hover {
+    color: var(--teal);
+    text-decoration: none;
+  }
+
+  @media (max-width: 760px) {
+    .site-nav {
+      display: none;
+    }
+  }
+</style>

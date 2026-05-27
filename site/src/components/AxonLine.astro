@@ -1,0 +1,76 @@
+---
+// A thin axon line with nodes and a signal pulse travelling along it.
+// Brand motif: the neuron's signal-carrying fibre. Decorative -> aria-hidden.
+// The pulse is disabled under prefers-reduced-motion.
+---
+
+<div class="axon-motif" aria-hidden="true">
+  <svg viewBox="0 0 1200 120" preserveAspectRatio="none" role="presentation">
+    <defs>
+      <linearGradient id="axon-stroke" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#9fc1c4" />
+        <stop offset="50%" stop-color="#2d5b66" />
+        <stop offset="100%" stop-color="#c2d8c6" />
+      </linearGradient>
+    </defs>
+
+    <!-- the fibre -->
+    <path
+      id="axon-path"
+      d="M0 70 C 160 70, 200 30, 340 30 S 520 92, 660 70 S 880 24, 1010 52 S 1140 70, 1200 64"
+      fill="none"
+      stroke="url(#axon-stroke)"
+      stroke-width="2"
+      stroke-linecap="round"
+    />
+
+    <!-- circuit nodes along the fibre -->
+    <g class="axon-nodes" fill="#2d5b66">
+      <circle cx="0" cy="70" r="4" />
+      <circle cx="340" cy="30" r="5" />
+      <circle cx="660" cy="70" r="4.5" />
+      <circle cx="1010" cy="52" r="5" />
+      <circle cx="1200" cy="64" r="4" />
+    </g>
+    <g class="axon-nodes-soft" fill="#9fc1c4">
+      <circle cx="180" cy="46" r="3" />
+      <circle cx="500" cy="80" r="3" />
+      <circle cx="840" cy="38" r="3" />
+    </g>
+
+    <!-- travelling signal pulse -->
+    <circle class="axon-pulse" r="5" fill="#f5ddd0" stroke="#2d5b66" stroke-width="1.5">
+      <animateMotion class="axon-pulse-motion" dur="5.5s" repeatCount="indefinite" rotate="auto">
+        <mpath href="#axon-path" />
+      </animateMotion>
+    </circle>
+  </svg>
+</div>
+
+<style>
+  .axon-motif {
+    width: 100%;
+    line-height: 0;
+    pointer-events: none;
+  }
+
+  .axon-motif svg {
+    width: 100%;
+    height: clamp(70px, 10vw, 120px);
+    display: block;
+  }
+
+  .axon-pulse {
+    filter: drop-shadow(0 0 4px rgba(45, 91, 102, 0.45));
+  }
+
+  /* Respect reduced motion: park the pulse, keep the static fibre + nodes. */
+  @media (prefers-reduced-motion: reduce) {
+    .axon-pulse-motion {
+      display: none;
+    }
+    .axon-pulse {
+      display: none;
+    }
+  }
+</style>

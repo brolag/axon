@@ -1,0 +1,276 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import { withBase } from '../../lib/paths';
+
+const tree = `axon/
+  policy.py      # PolicyEngine: allow/ask/deny, filesystem jail, non-overridable deny layer
+  client.py      # Ollama over HTTP (stdlib only). Validates tool-call shape.
+  session.py     # state: messages, step counter, token budget, redundancy caches
+  loop.py        # the agentic loop + four cuts: done / max_steps / stalled / repetition
+  dispatch.py    # single path for tools: cache, repetition nudge, budget, transcript
+  prompt.py      # TemplatedSystemInstructions (fixed security scaffold + injectable role)
+  tools/         # read_file, write_file, list_dir, run_shell, run_tests, start_subagent, done
+  artifacts.py   # the structured, verifiable transcript (artifacts over raw logs)`;
+
+const cuts = [
+  {
+    name: 'done',
+    trigger: 'The model calls done(summary, verified=true).',
+    detail: 'The only successful exit. Verification is mandatory: the agent must run the tests or the command and call done only with evidence.',
+  },
+  {
+    name: 'max_steps',
+    trigger: 'The step counter reaches the policy limit (default 25).',
+    detail: 'A hard ceiling on loop iterations. Near the limit the harness injects a synthesis prompt so the agent reports what it has rather than dying silently.',
+  },
+  {
+    name: 'stalled',
+    trigger: 'Two text-only turns with no tool call.',
+    detail: 'A text-only turn is ambiguous. The harness nudges once ("Did you finish? Call done, or call a tool"). A second text-only turn cuts as stalled.',
+  },
+  {
+    name: 'repetition_detected',
+    trigger: 'Three identical tool calls in a row.',
+    detail: 'Catches the re-read loop where a model keeps reading the same file. The dispatcher also serves idempotent reads from cache and nudges before the cut fires.',
+  },
+];
+
+const tools = [
+  { name: 'read_file', kind: 'read', desc: 'Read a file from the workspace, returned with line numbers. Idempotent: served from cache on a repeat call.' },
+  { name: 'write_file', kind: 'write', desc: 'Create or overwrite a file. Creates parent dirs. Backs up before overwriting.' },
+  { name: 'list_dir', kind: 'read', desc: 'List files and subdirectories. Preferred over ls through run_shell. Cacheable.' },
+  { name: 'run_shell', kind: 'shell', desc: 'Run a command. Passes through the PolicyEngine first. Timeout 60s default, 300s max.' },
+  { name: 'run_tests', kind: 'shell', desc: 'Run the test suite (pytest -q by default). The verification primitive of the loop.' },
+  { name: 'start_subagent', kind: 'control', desc: 'Spawn a read-only subagent with an isolated context. Returns only its synthesis. Depth capped at 1.' },
+  { name: 'done', kind: 'control', desc: 'Terminate the loop with a summary and a verified flag. The only successful exit.' },
+];
+---
+
+<DocsLayout
+  title="Architecture"
+  eyebrow="How it works"
+  description="The agentic loop, the four termination cuts, and the toolset. A while-loop, never recursive, with the harness behaviours the model cannot be trusted to do."
+>
+  <h2>The loop</h2>
+  <p>
+    axon works in a single while-loop: plan, use a tool, execute, verify, repeat. It is
+    never recursive. Recursion happens only inside subagents, which run their own bounded
+    loop. Each iteration the loop sends the conversation to the model, reads back tool
+    calls, dispatches them, and appends the results to the transcript. The loop owns the
+    four cuts that decide when to stop.
+  </p>
+
+  <div class="loop-beats" role="list">
+    <div role="listitem" class="beat"><span class="beat-n">1</span><strong>Plan</strong><span>State the next move in one or two lines.</span></div>
+    <div role="listitem" class="beat"><span class="beat-n">2</span><strong>Use a tool</strong><span>Call read, write, shell, tests or a subagent.</span></div>
+    <div role="listitem" class="beat"><span class="beat-n">3</span><strong>Execute</strong><span>The dispatcher runs it through the policy gate.</span></div>
+    <div role="listitem" class="beat"><span class="beat-n">4</span><strong>Verify</strong><span>Run the tests. No done() without evidence.</span></div>
+  </div>
+
+  <p>
+    Verification is the beat that separates an agent from autocomplete. The model cannot
+    self-evaluate reliably, so verification is a step the harness forces: <code>done()</code>
+    is only accepted with evidence that tests pass or a command ran.
+  </p>
+
+  <h2>The four cuts</h2>
+  <p>
+    A cut is a termination condition. Exactly one fires per run. The loop returns a
+    <code>LoopResult</code> carrying the reason, the step count and the full session.
+  </p>
+
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Cut</th>
+          <th scope="col">Trigger</th>
+          <th scope="col">What it prevents</th>
+        </tr>
+      </thead>
+      <tbody>
+        {cuts.map((c) => (
+          <tr>
+            <th scope="row"><code>{c.name}</code></th>
+            <td>{c.trigger}</td>
+            <td class="muted">{c.detail}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <h2>The toolset</h2>
+  <p>
+    Seven tools, exposed to Ollama as JSON schemas. Reads are idempotent and cacheable.
+    Writes are backed up. Shell goes through the policy gate. The subagent runs read-only
+    in an isolated context so heavy reads do not pollute the parent window.
+  </p>
+
+  <div class="tool-grid">
+    {tools.map((t) => (
+      <div class="tool">
+        <div class="tool-head">
+          <code class="tool-name">{t.name}</code>
+          <span class={`tool-tag tag-${t.kind}`}>{t.kind}</span>
+        </div>
+        <p class="muted">{t.desc}</p>
+      </div>
+    ))}
+  </div>
+
+  <h2>The dispatcher</h2>
+  <p>
+    Every tool runs through one path: <code>dispatch.py</code>. It wraps each handler with
+    the cross-cutting behaviours the model cannot be trusted to do on its own.
+  </p>
+  <ul>
+    <li><strong>Redundancy cache.</strong> Identical idempotent reads are served from cache, killing the re-read loop.</li>
+    <li><strong>Repetition nudge.</strong> After two repeats the result carries a nudge to move on, a softer defence before the repetition cut fires.</li>
+    <li><strong>Token accounting.</strong> Each result is charged against a budget. Near the limit the loop forces a synthesis.</li>
+    <li><strong>Structured transcript.</strong> Calls and results are logged as artifacts, not raw stdout, so the run is inspectable.</li>
+  </ul>
+
+  <h2>The file map</h2>
+  <CodeBlock code={tree} lang="text" label="package layout" />
+
+  <h2>Why these decisions</h2>
+  <p>Each design choice is grounded in AI-engineering literature, not vibes.</p>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Decision</th>
+          <th scope="col">Why</th>
+          <th scope="col">Source</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row">Harness, not just model</th>
+          <td>A better harness beats a better model on the same task.</td>
+          <td class="muted">harness-design research</td>
+        </tr>
+        <tr>
+          <th scope="row">Verify in the loop</th>
+          <td>Agents cannot self-evaluate reliably; verification must be a step.</td>
+          <td class="muted">Ning et al. 2026</td>
+        </tr>
+        <tr>
+          <th scope="row">Security framing in the prompt</th>
+          <td>Framing the agent as a senior security engineer reduces vulnerable output.</td>
+          <td class="muted">Pearce et al. 2022 (IEEE S&P)</td>
+        </tr>
+        <tr>
+          <th scope="row">The model is untrusted input</th>
+          <td>All security lives in the policy engine and jail, never in the prompt.</td>
+          <td class="muted">OWASP LLM Top 10</td>
+        </tr>
+        <tr>
+          <th scope="row">Subagents for context isolation</th>
+          <td>Offload heavy reads; the parent keeps a clean window.</td>
+          <td class="muted">Antigravity's start_subagent</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    Next: how the <a href={withBase('/docs/safety')}>PolicyEngine</a> gates every action,
+    or the <a href={withBase('/docs/evaluation')}>evaluation protocol</a> behind the
+    completion claims.
+  </p>
+</DocsLayout>
+
+<style>
+  .loop-beats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.9rem;
+    margin: 1.6em 0;
+  }
+
+  .beat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: #fffdfa;
+  }
+
+  .beat-n {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--teal);
+    font-weight: 500;
+  }
+
+  .beat strong {
+    font-size: 1.02rem;
+  }
+
+  .beat span:last-child {
+    font-size: 0.88rem;
+    color: var(--ink-muted);
+    line-height: 1.45;
+  }
+
+  .tool-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+    gap: 1rem;
+    margin: 1.6em 0;
+  }
+
+  .tool {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 1rem 1.1rem;
+    background: #fffdfa;
+  }
+
+  .tool-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+
+  .tool-name {
+    font-size: 0.92rem;
+    background: var(--cream-2);
+    border: 1px solid var(--border);
+    color: var(--teal-deep);
+    padding: 0.12em 0.45em;
+    border-radius: 5px;
+  }
+
+  .tool p {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .tool-tag {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.16em 0.5em;
+    border-radius: 999px;
+  }
+
+  .tag-read { background: var(--wash-blue); color: var(--ink); }
+  .tag-write { background: var(--peach); color: var(--ink); }
+  .tag-shell { background: var(--wash-green); color: var(--ink); }
+  .tag-control { background: var(--cream-2); color: var(--ink-muted); border: 1px solid var(--border); }
+
+  @media (max-width: 760px) {
+    .loop-beats {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+</style>
