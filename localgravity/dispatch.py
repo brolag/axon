@@ -29,8 +29,8 @@ def dispatch(call: ToolCall, ctx: ToolContext) -> ToolResult:
     key = session.call_key(name, args)
     repeats = session.note_call(key)
 
-    # PRE: redundancy cache for idempotent reads.
-    if name in CACHEABLE and key in session.tool_cache:
+    # PRE: redundancy cache for idempotent reads (disabled in naive baseline mode).
+    if not ctx.naive and name in CACHEABLE and key in session.tool_cache:
         session.log("tool_result", name, cached=True)
         return ToolResult(
             content=f"[cache] you already ran this and nothing changed:\n{session.tool_cache[key]}",
@@ -44,8 +44,8 @@ def dispatch(call: ToolCall, ctx: ToolContext) -> ToolResult:
     if name in CACHEABLE and not result.is_error:
         session.tool_cache[key] = result.content
 
-    # POST: repetition nudge (defense over the loop's repetition cut).
-    if repeats >= 2 and not result.from_cache:
+    # POST: repetition nudge (defense over the loop's repetition cut; off in naive mode).
+    if not ctx.naive and repeats >= 2 and not result.from_cache:
         result.content += "\n[harness] you are repeating the same action. Move to the next step."
 
     # POST: token accounting + transcript.

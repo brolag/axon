@@ -1,0 +1,13 @@
+{
+  "multistep": {
+    "runs": 1,
+    "completion_rate": 1.0,
+    "median_steps": 8,
+    "p50_latency": 47.2,
+    "failure_classes": {}
+  },
+  "_overall": {
+    "runs": 1,
+    "completion_rate": 1.0
+  }
+}

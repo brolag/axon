@@ -39,8 +39,17 @@ def build_system_prompt(
     tools_doc: str,
     sections: list[str] | None = None,
     test_command: str = "pytest -q",
+    naive: bool = False,
 ) -> str:
     sections = sections or []
+    if naive:
+        # Baseline: bare prompt, no operating-loop structure, no efficiency rules.
+        # Security scaffold stays (the baseline must still be safe to run).
+        return (
+            f"{SECURITY_SCAFFOLD}\n\n## Your role\n{identity}\n\n"
+            f"You have tools. Use them to complete the task.\n\n## Tools\n{tools_doc}\n\n"
+            f"## Environment\nWorkspace: {cwd}\nTest runner: {test_command}"
+        )
     parts = [
         SECURITY_SCAFFOLD,
         f"## Your role\n{identity}",

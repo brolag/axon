@@ -19,6 +19,8 @@ class ToolContext:
     run_subagent: Callable[[str, list[str] | None, int], str]
     # Subagent recursion guard: current nesting depth.
     depth: int = 0
+    # Baseline mode: disable harness "smarts" (cache, repetition nudge) to isolate their effect.
+    naive: bool = False
 
 
 @dataclass

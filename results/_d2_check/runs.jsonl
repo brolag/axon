@@ -1,0 +1,1 @@
+{"task": "D2_logging", "category": "multistep", "optimal_steps": 8, "run": 0, "model": "gemma4:26b", "temp": 0.0, "naive": false, "passed": true, "outcome": "solved", "reason": "stalled", "steps": 8, "tool_calls": 6, "latency_sec": 47.18}

@@ -49,6 +49,7 @@ def run_agent(
     interactive: bool = True,
     approve: Callable[[str, str], bool] | None = None,
     client: OllamaClient | None = None,
+    naive: bool = False,
 ) -> LoopResult:
     policy = Policy.load(policy_path)
     cwd = Path(cwd).resolve()
@@ -57,7 +58,7 @@ def run_agent(
     approve = approve or (_default_approve if interactive else (lambda *_: False))
 
     schemas = SCHEMAS
-    system = build_system_prompt(identity, str(cwd), tools_doc(schemas), sections)
+    system = build_system_prompt(identity, str(cwd), tools_doc(schemas), sections, naive=naive)
     session = Session(
         cwd=cwd,
         max_steps=policy.max_steps,
@@ -67,16 +68,16 @@ def run_agent(
     def run_subagent(sub_task: str, allowed: list[str] | None, max_steps: int) -> str:
         return _run_subagent_loop(sub_task, engine, client, max_steps, depth=1)
 
-    return _loop(session, engine, client, schemas, approve, run_subagent, depth=0)
+    return _loop(session, engine, client, schemas, approve, run_subagent, depth=0, naive=naive)
 
 
-def _loop(session, engine, client, schemas, approve, run_subagent, depth) -> LoopResult:
+def _loop(session, engine, client, schemas, approve, run_subagent, depth, naive=False) -> LoopResult:
     nudged = False
     while not session.done and session.step < session.max_steps:
         session.step += 1
 
-        # Inject an ephemeral "files in context" reminder (not persisted, to avoid bloat).
-        reminder = session.files_in_context()
+        # Inject an ephemeral "files in context" reminder (not persisted). Off in naive mode.
+        reminder = "" if naive else session.files_in_context()
         messages = session.messages + ([{"role": "system", "content": reminder}] if reminder else [])
 
         turn = client.chat(messages, schemas)
@@ -102,11 +103,11 @@ def _loop(session, engine, client, schemas, approve, run_subagent, depth) -> Loo
             "tool_calls": [{"function": {"name": c.name, "arguments": c.arguments}} for c in turn.tool_calls],
         })
 
-        ctx = ToolContext(session=session, policy=engine, approve=approve, run_subagent=run_subagent, depth=depth)
+        ctx = ToolContext(session=session, policy=engine, approve=approve, run_subagent=run_subagent, depth=depth, naive=naive)
         for call in turn.tool_calls:
-            # Repetition cut: 3 identical calls in a row.
+            # Repetition cut: 3 identical calls in a row (off in naive mode).
             key = session.call_key(call.name, call.arguments)
-            if session.recent_calls.count(key) >= 2 and session.recent_calls[-1:] == [key]:
+            if not naive and session.recent_calls.count(key) >= 2 and session.recent_calls[-1:] == [key]:
                 session.done_reason = "repetition_detected"
                 session.log("cut", "repetition_detected", tool=call.name)
                 return LoopResult(False, "repetition_detected", session.step, session)
