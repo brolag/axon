@@ -37,6 +37,23 @@ class OllamaClient:
         self.host = (host or DEFAULT_HOST).rstrip("/")
         self.temperature = temperature
 
+    def preflight(self) -> str | None:
+        """Return None if Ollama is reachable and the model is present, else a friendly message."""
+        try:
+            req = urllib.request.Request(f"{self.host}/api/tags")
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                tags = json.load(resp)
+        except Exception:
+            return (
+                f"Cannot reach Ollama at {self.host}. Is it running? "
+                f"Start it (`ollama serve`) or pass --host."
+            )
+        names = {m.get("name", "") for m in tags.get("models", [])}
+        base = self.model.split(":")[0]
+        if self.model not in names and not any(n.split(":")[0] == base for n in names):
+            return f"Model '{self.model}' not found in Ollama. Pull it: `ollama pull {self.model}`."
+        return None
+
     def chat(self, messages: list[dict], tools: list[dict]) -> ModelTurn:
         body = json.dumps({
             "model": self.model,

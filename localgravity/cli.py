@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from .artifacts import to_markdown
+from .client import OllamaClient
 from .loop import run_agent
 
 
@@ -25,6 +26,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--yolo", action="store_true", help="Non-interactive: ASK becomes DENY, no prompts.")
     parser.add_argument("--identity", default="You are a maintenance agent for this repository.")
     args = parser.parse_args(argv)
+
+    # Preflight: fail fast with a friendly message if Ollama/model isn't ready.
+    problem = OllamaClient(model=args.model, host=args.host).preflight()
+    if problem:
+        print(f"error: {problem}", file=sys.stderr)
+        return 2
 
     result = run_agent(
         task=args.task,
