@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.localgravity/
+build/
+dist/
+.venv/
+venv/
+results/raw/

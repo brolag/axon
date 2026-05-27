@@ -1,0 +1,154 @@
+"""The agentic loop — plan -> tool -> execute -> verify -> repeat.
+
+A while-loop, never recursive (recursion only happens inside subagents, which run
+their own bounded loop). Owns the four termination cuts: done, max_steps, stalled,
+repetition.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Callable
+
+from .client import OllamaClient
+from .context import ToolContext
+from .dispatch import dispatch
+from .policy import Policy, PolicyEngine
+from .prompt import build_system_prompt, tools_doc
+from .session import Session
+from .tools import SCHEMAS, subagent_schemas
+
+
+@dataclass
+class LoopResult:
+    done: bool
+    reason: str
+    steps: int
+    session: Session
+
+
+def _default_approve(kind: str, detail: str) -> bool:
+    try:
+        ans = input(f"[localgravity] the agent wants to {kind}: {detail}\n  Allow? [y/N/always] ").strip().lower()
+    except EOFError:
+        return False
+    return ans in {"y", "yes", "always"}
+
+
+def run_agent(
+    task: str,
+    cwd: str | Path,
+    *,
+    model: str = "gemma4:26b",
+    host: str | None = None,
+    temperature: float = 0.0,
+    policy_path: str = "policy.yaml",
+    identity: str = "You are a maintenance agent for this repository.",
+    sections: list[str] | None = None,
+    interactive: bool = True,
+    approve: Callable[[str, str], bool] | None = None,
+    client: OllamaClient | None = None,
+) -> LoopResult:
+    policy = Policy.load(policy_path)
+    cwd = Path(cwd).resolve()
+    engine = PolicyEngine(policy, cwd=cwd, interactive=interactive)
+    client = client or OllamaClient(model=model, host=host, temperature=temperature)
+    approve = approve or (_default_approve if interactive else (lambda *_: False))
+
+    schemas = SCHEMAS
+    system = build_system_prompt(identity, str(cwd), tools_doc(schemas), sections)
+    session = Session(
+        cwd=cwd,
+        max_steps=policy.max_steps,
+        messages=[{"role": "system", "content": system}, {"role": "user", "content": task}],
+    )
+
+    def run_subagent(sub_task: str, allowed: list[str] | None, max_steps: int) -> str:
+        return _run_subagent_loop(sub_task, engine, client, max_steps, depth=1)
+
+    return _loop(session, engine, client, schemas, approve, run_subagent, depth=0)
+
+
+def _loop(session, engine, client, schemas, approve, run_subagent, depth) -> LoopResult:
+    nudged = False
+    while not session.done and session.step < session.max_steps:
+        session.step += 1
+
+        # Inject an ephemeral "files in context" reminder (not persisted, to avoid bloat).
+        reminder = session.files_in_context()
+        messages = session.messages + ([{"role": "system", "content": reminder}] if reminder else [])
+
+        turn = client.chat(messages, schemas)
+
+        if not turn.tool_calls:
+            # Text-only turn: ambiguous. One nudge, then cut as stalled.
+            session.messages.append({"role": "assistant", "content": turn.content})
+            if nudged:
+                session.done_reason = "stalled"
+                session.log("cut", "stalled")
+                return LoopResult(False, "stalled", session.step, session)
+            session.messages.append({
+                "role": "user",
+                "content": "Did you finish? Call done(summary). If not, call a tool to make progress.",
+            })
+            nudged = True
+            continue
+
+        nudged = False
+        session.messages.append({
+            "role": "assistant",
+            "content": turn.content,
+            "tool_calls": [{"function": {"name": c.name, "arguments": c.arguments}} for c in turn.tool_calls],
+        })
+
+        ctx = ToolContext(session=session, policy=engine, approve=approve, run_subagent=run_subagent, depth=depth)
+        for call in turn.tool_calls:
+            # Repetition cut: 3 identical calls in a row.
+            key = session.call_key(call.name, call.arguments)
+            if session.recent_calls.count(key) >= 2 and session.recent_calls[-1:] == [key]:
+                session.done_reason = "repetition_detected"
+                session.log("cut", "repetition_detected", tool=call.name)
+                return LoopResult(False, "repetition_detected", session.step, session)
+
+            result = dispatch(call, ctx)
+            session.messages.append({"role": "tool", "content": result.content})
+            if session.done:
+                session.log("cut", "done")
+                return LoopResult(True, "done", session.step, session)
+
+        # Budget cut: force synthesis before the window explodes.
+        if session.budget_tokens <= 1000:
+            session.messages.append({
+                "role": "user",
+                "content": "You are near your context limit. Call done(summary) with what you have.",
+            })
+
+    reason = session.done_reason or ("done" if session.done else "max_steps_exceeded")
+    session.log("cut", reason)
+    return LoopResult(session.done, reason, session.step, session)
+
+
+def _run_subagent_loop(task, engine, client, max_steps, depth) -> str:
+    """Isolated-context subagent: fresh Session, reduced read-only toolset, no nesting."""
+    schemas = subagent_schemas()
+    system = build_system_prompt(
+        "You are a subagent. Investigate the task and return a concise synthesis. You are read-only.",
+        str(engine.cwd),
+        tools_doc(schemas),
+    )
+    sub = Session(
+        cwd=engine.cwd,
+        max_steps=min(max_steps, engine.policy.subagent_max_steps),
+        messages=[{"role": "system", "content": system}, {"role": "user", "content": task}],
+    )
+
+    def no_subagent(*_):
+        return "denied: nested subagents are not allowed"
+
+    result = _loop(sub, engine, client, schemas, lambda *_: False, no_subagent, depth=depth)
+    # Return the last assistant content as the synthesis.
+    for msg in reversed(result.session.messages):
+        if msg.get("role") == "assistant" and msg.get("content"):
+            return msg["content"]
+    return "(subagent produced no synthesis)"
