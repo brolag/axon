@@ -36,6 +36,7 @@ class Session:
     budget_tokens: int = 32_000
     done: bool = False
     done_reason: str | None = None
+    tests_passed: bool = False   # a verification (run_tests / pytest) returned success
     tool_cache: dict[str, str] = field(default_factory=dict)   # hash(tool+args) -> result
     read_files: dict[str, str] = field(default_factory=dict)   # path -> content hash
     recent_calls: list[str] = field(default_factory=list)      # hashes for repetition detection

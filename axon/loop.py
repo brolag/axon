@@ -161,8 +161,15 @@ def _loop(session, engine, client, schemas, approve, run_subagent, depth, naive=
         turn = client.chat(messages, schemas)
 
         if not turn.tool_calls:
-            # Text-only turn: ambiguous. One nudge, then cut as stalled.
+            # Text-only turn. If a verification already passed, the model is signing
+            # off in prose instead of calling done(): treat it as an implicit done.
             session.messages.append({"role": "assistant", "content": turn.content})
+            if session.tests_passed:
+                session.done = True
+                session.done_reason = "done"
+                session.log("cut", "done", implicit=True)
+                return LoopResult(True, "done", session.step, session)
+            # Otherwise ambiguous: one nudge, then cut as stalled.
             if nudged:
                 session.done_reason = "stalled"
                 session.log("cut", "stalled")

@@ -44,6 +44,13 @@ def dispatch(call: ToolCall, ctx: ToolContext) -> ToolResult:
     if name in CACHEABLE and not result.is_error:
         session.tool_cache[key] = result.content
 
+    # POST: note a passing verification, so the loop can recognize an implicit done
+    # when the model finishes by summarizing in prose instead of calling done().
+    cmd = str(args.get("command", ""))
+    is_verification = name == "run_tests" or (name == "run_shell" and any(k in cmd for k in ("pytest", "tox", "test")))
+    if is_verification and not result.is_error:
+        session.tests_passed = True
+
     # POST: repetition nudge (defense over the loop's repetition cut; off in naive mode).
     if not ctx.naive and repeats >= 2 and not result.from_cache:
         result.content += "\n[harness] you are repeating the same action. Move to the next step."
