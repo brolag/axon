@@ -265,7 +265,7 @@ td code {
 }
 
 .btn-ghost {
-  background: transparent;
+  background: var(--cream);
   color: var(--teal-deep);
   border-color: var(--border-strong);
 }
