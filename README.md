@@ -19,17 +19,24 @@ ollama pull gemma4:26b
 # 2. Install (PyYAML is the only runtime dependency; Ollama is reached over HTTP):
 pip install -e .
 
-# 3. Run the agent against a workspace:
-axon "Fix the failing test in test_calc.py and confirm it passes" --cwd ./myproject
+# 3a. Chat mode (default): open a conversational session in your project
+axon --cwd ./myproject
+
+# 3b. Print mode (-p): run one task and exit (for scripts and CI)
+axon -p "Fix the failing test in test_calc.py and confirm it passes" --cwd ./myproject
 
 # Or the end-to-end example (creates a buggy repo and fixes it):
 python examples/fix_bug.py
 ```
 
-### Interactive mode
+### Two ways to run it
 
-Run `axon` with no task to open a conversational session. Context carries across
-turns, so the agent does not re-read what it already knows:
+`axon` works like a familiar agent CLI:
+
+- **`axon`** opens an interactive **chat** session. Context carries across turns, so
+  the agent does not re-read what it already knows. A positional task seeds the first turn.
+- **`axon -p "task"`** is **print mode**: run the task once, print the result, exit.
+  Non-conversational, for scripts and CI.
 
 ```
 $ axon --cwd ./myproject
@@ -40,7 +47,7 @@ axon › now add a test for the empty-password case
 axon › /exit
 ```
 
-Commands: `/exit`, `/quit`, `/reset` (clear the session).
+Commands in chat: `/exit`, `/quit`, `/reset` (clear the session).
 
 ## The pattern (and why it works)
 

@@ -7,8 +7,10 @@ All notable changes to axon are documented here. Format based on
 ## [Unreleased]
 
 ### Added
-- **Interactive REPL**: run `axon` with no task to open a conversational session.
-  Context (history, file cache) carries across turns. Commands: `/exit`, `/quit`, `/reset`.
+- **Chat by default, `-p` for print mode**: bare `axon` opens an interactive chat
+  session (context carries across turns; commands `/exit`, `/quit`, `/reset`).
+  `axon -p "task"` runs one task and exits, for scripts and CI. A positional task
+  in chat mode seeds the first turn.
 - Documentation site (Astro) under `site/`, deployable to GitHub Pages.
 - Hero asset and neural-motif SVG under `assets/`.
 - `axon` console entry point and `install.sh` installer with Ollama preflight checks.

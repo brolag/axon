@@ -83,11 +83,13 @@ def run_repl(
     interactive: bool = True,
     approve: Callable[[str, str], bool] | None = None,
     client: OllamaClient | None = None,
+    first_task: str | None = None,
 ) -> None:
     """Conversational session: keep one Session alive across turns.
 
     Context (history, read-file cache) carries over between tasks, so the agent
     does not re-read what it already knows. Commands: /exit, /quit, /reset.
+    If first_task is given, it runs as the opening turn before prompting.
     """
     policy = Policy.load(policy_path)
     cwd = Path(cwd).resolve()
@@ -110,8 +112,25 @@ def run_repl(
     def run_subagent(sub_task: str, allowed: list[str] | None, max_steps: int) -> str:
         return _run_subagent_loop(sub_task, engine, client, max_steps, depth=1)
 
+    def run_turn(line: str) -> None:
+        # Continue the same session: append the task, reset per-turn counters.
+        session.messages.append({"role": "user", "content": line})
+        session.step = 0
+        session.done = False
+        session.done_reason = None
+        session.recent_calls = []
+        result = _loop(session, engine, client, schemas, approve, run_subagent, depth=0)
+        flag = "✓" if result.done else "✗"
+        print(f"{flag} {result.reason} in {result.steps} steps "
+              f"(~{max(session.budget_tokens, 0)} context tokens left)\n")
+
     print(f"axon REPL  ·  model={client.model}  ·  workspace={cwd}")
     print("Type a task. Commands: /exit, /quit, /reset.\n")
+
+    if first_task:
+        print(f"axon › {first_task}")
+        run_turn(first_task)
+
     while True:
         try:
             line = input("axon › ").strip()
@@ -126,18 +145,7 @@ def run_repl(
             session = fresh_session()
             print("(session reset)\n")
             continue
-
-        # Continue the same session: append the task, reset per-turn counters.
-        session.messages.append({"role": "user", "content": line})
-        session.step = 0
-        session.done = False
-        session.done_reason = None
-        session.recent_calls = []
-        result = _loop(session, engine, client, schemas, approve, run_subagent, depth=0)
-
-        flag = "✓" if result.done else "✗"
-        print(f"{flag} {result.reason} in {result.steps} steps "
-              f"(~{max(session.budget_tokens, 0)} context tokens left)\n")
+        run_turn(line)
     print("bye")
 
 

@@ -16,7 +16,9 @@ def main(argv: list[str] | None = None) -> int:
         prog="axon",
         description="A local coding agent recreating Antigravity's plan-tool-verify pattern, powered by Gemma 4.",
     )
-    parser.add_argument("task", nargs="?", help="The task. Omit to enter the interactive REPL.")
+    parser.add_argument("task", nargs="?", help="The task. Omit for interactive chat; seeds chat as the first turn unless -p is given.")
+    parser.add_argument("-p", "--print", action="store_true",
+                        help="Print mode: run the task once and exit (non-conversational). Requires a task.")
     parser.add_argument("--cwd", default=".", help="Workspace root (the jail). Default: current dir.")
     parser.add_argument("--model", default="gemma4:26b", help="Ollama model. Default: gemma4:26b.")
     parser.add_argument("--host", default=None, help="Ollama host (e.g. http://localhost:11434).")
@@ -33,9 +35,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: {problem}", file=sys.stderr)
         return 2
 
-    # No task -> interactive REPL (conversational session, context carries over).
-    if not args.task:
-        run_repl(
+    # Print mode (-p): run once and exit. Otherwise: interactive chat.
+    if args.print:
+        if not args.task:
+            print("error: -p/--print requires a task, e.g. axon -p \"fix the failing test\"", file=sys.stderr)
+            return 2
+        result = run_agent(
+            task=args.task,
             cwd=args.cwd,
             model=args.model,
             host=args.host,
@@ -44,10 +50,12 @@ def main(argv: list[str] | None = None) -> int:
             identity=args.identity,
             interactive=not args.yolo,
         )
-        return 0
+        print(to_markdown(result), file=sys.stderr)
+        print(f"\nResult: {result.reason} in {result.steps} steps.")
+        return 0 if result.done else 1
 
-    result = run_agent(
-        task=args.task,
+    # Chat mode: bare `axon` opens the REPL; a positional task seeds the first turn.
+    run_repl(
         cwd=args.cwd,
         model=args.model,
         host=args.host,
@@ -55,11 +63,9 @@ def main(argv: list[str] | None = None) -> int:
         policy_path=args.policy,
         identity=args.identity,
         interactive=not args.yolo,
+        first_task=args.task,
     )
-
-    print(to_markdown(result), file=sys.stderr)
-    print(f"\nResult: {result.reason} in {result.steps} steps.")
-    return 0 if result.done else 1
+    return 0
 
 
 if __name__ == "__main__":
