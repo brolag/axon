@@ -1,0 +1,68 @@
+# axon safety policy
+# Three verdicts: allow / ask / deny. DENY always wins (default-deny on the critical layer).
+# The model is treated as untrusted input. No security decision is delegated to the prompt.
+version: 1
+
+# Verdict when no rule matches. Conservative.
+default: ask
+
+# Filesystem jail: every path is resolved and must fall inside the workspace.
+workspace_jail: true
+deny_paths:
+  - ".git/**"
+  - ".env*"
+  - "**/*.pem"
+  - "**/*.key"
+  - "**/id_rsa*"
+  - "**/.ssh/**"
+  - "**/.axon/**"   # the harness does not edit itself
+
+# Network policy (enforced only if run inside a sandbox that controls it; advisory otherwise).
+network:
+  default: deny
+  allow_hosts: []
+
+shell:
+  # ALWAYS blocked, non-overridable hardening layer. Evaluated first.
+  deny_patterns:
+    - '\brm\b(?=.*(-\w*r|--recursive))(?=.*\s(/|~|\$HOME|\*)(\s|$))'   # recursive rm of root/home/glob, any flag order
+    - '\bdd\s+if='
+    - ':\(\)\s*\{.*\};\s*:'             # fork bomb
+    - '\bmkfs\b'
+    - '\b(shutdown|reboot|halt|poweroff)\b'
+    - '\bchmod\s+-R\s+777\b'
+    - 'curl[^|]*\|\s*(sh|bash|zsh)'     # curl | sh
+    - 'wget[^|]*\|\s*(sh|bash|zsh)'
+    - '>\s*/dev/sd[a-z]'
+    - '\bgit\s+push\b'                  # never push autonomously
+  # Allowed without asking (safe inspection / verification).
+  allow_patterns:
+    - '^(ls|cat|head|tail|wc|grep|rg|fd|find|pwd|echo|which|tree|file|stat)\b'
+    - '^(pytest|python\s+-m\s+pytest|tox|ruff|mypy|black\s+--check|flake8)\b'
+    - '^python[0-9.]*\s'
+    - '^git\s+(status|diff|log|branch|show|add)\b'
+    - '^(npm|pnpm|yarn)\s+(test|run\s+lint|run\s+build)\b'
+  # Require human permission (reversible but sensitive mutations).
+  ask_patterns:
+    - '^(pip|pip3|uv)\s+install\b'
+    - '^npm\s+install\b'
+    - '^git\s+(commit|checkout|reset|stash|restore)\b'
+    - '^(mv|cp|mkdir|touch|rm)\b'
+
+files:
+  write:
+    default: allow              # inside jail and outside deny_paths
+    max_file_bytes: 1048576     # 1 MB per file
+    backup_before_overwrite: true
+  read:
+    max_file_bytes: 262144      # 256 KB, truncate above
+
+subagents:
+  max_depth: 1
+  default_mode: read_only
+  max_steps: 10
+
+limits:
+  max_steps: 25
+  shell_timeout_sec: 60
+  shell_timeout_max_sec: 300

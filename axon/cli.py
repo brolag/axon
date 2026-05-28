@@ -4,11 +4,16 @@ from __future__ import annotations
 
 import argparse
 import sys
-from pathlib import Path
+from importlib.resources import files
 
 from .artifacts import to_markdown
 from .client import OllamaClient
 from .loop import run_agent, run_repl
+
+
+def _default_policy_path() -> str:
+    """The policy bundled with the package, so axon works installed anywhere."""
+    return str(files("axon") / "default_policy.yaml")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -23,11 +28,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--model", default="gemma4:26b", help="Ollama model. Default: gemma4:26b.")
     parser.add_argument("--host", default=None, help="Ollama host (e.g. http://localhost:11434).")
     parser.add_argument("--temperature", type=float, default=0.0)
-    parser.add_argument("--policy", default=str(Path(__file__).parent.parent / "policy.yaml"))
+    parser.add_argument("--policy", default=None, help="Path to a policy.yaml. Default: the bundled policy.")
     parser.add_argument("--max-steps", type=int, default=None, help="Override max steps.")
     parser.add_argument("--yolo", action="store_true", help="Non-interactive: ASK becomes DENY, no prompts.")
     parser.add_argument("--identity", default="You are a maintenance agent for this repository.")
     args = parser.parse_args(argv)
+    policy_path = args.policy or _default_policy_path()
 
     # Preflight: fail fast with a friendly message if Ollama/model isn't ready.
     problem = OllamaClient(model=args.model, host=args.host).preflight()
@@ -46,7 +52,7 @@ def main(argv: list[str] | None = None) -> int:
             model=args.model,
             host=args.host,
             temperature=args.temperature,
-            policy_path=args.policy,
+            policy_path=policy_path,
             identity=args.identity,
             interactive=not args.yolo,
         )
@@ -60,7 +66,7 @@ def main(argv: list[str] | None = None) -> int:
         model=args.model,
         host=args.host,
         temperature=args.temperature,
-        policy_path=args.policy,
+        policy_path=policy_path,
         identity=args.identity,
         interactive=not args.yolo,
         first_task=args.task,

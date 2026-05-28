@@ -25,5 +25,8 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 include = ["axon*"]
 
+[tool.setuptools.package-data]
+axon = ["default_policy.yaml"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]   # seed repos under eval/tasks/ are fixtures, not tests to collect

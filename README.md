@@ -16,8 +16,10 @@ The agent is the runtime. It plans, calls tools (read and write files, run shell
 # 1. Have Ollama running with Gemma 4:
 ollama pull gemma4:26b
 
-# 2. Install (PyYAML is the only runtime dependency; Ollama is reached over HTTP):
-pip install -e .
+# 2. Install. ./install.sh checks Ollama, pulls the model, and installs axon.
+#    With pipx present it installs a real global command (on PATH, repo-independent):
+./install.sh
+#    Or directly: pipx install .   (global)   |   pip install -e .   (dev, editable)
 
 # 3a. Chat mode (default): open a conversational session in your project
 axon --cwd ./myproject

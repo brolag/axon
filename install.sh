@@ -42,14 +42,24 @@ else
   warn "Ollama not reachable at $HOST. Start it with 'ollama serve', then pull: ollama pull $MODEL"
 fi
 
-# 4. Install the package
-say "Installing axon (editable)..."
-"$PY" -m pip install -e . -q || die "pip install failed."
+# 4. Install the package. pipx gives a real global command (isolated, on PATH,
+#    independent of this repo) like Claude Code. Falls back to pip if pipx is absent.
+if command -v pipx >/dev/null 2>&1; then
+  say "Installing axon globally with pipx..."
+  pipx install --force . || die "pipx install failed."
+  GLOBAL=1
+else
+  warn "pipx not found. Installing editable with pip (the 'axon' command is tied to this repo)."
+  warn "For a clean global install: 'brew install pipx' (or 'pip install pipx'), then re-run."
+  "$PY" -m pip install -e . -q || die "pip install failed."
+  GLOBAL=0
+fi
 
 # 5. Verify with the test suite (no model calls)
 say "Running tests..."
 "$PY" -m pytest -q || die "tests failed — installation is not healthy."
 
-say "Done. Try it:"
-echo "    axon \"Fix the failing test and confirm it passes\" --cwd ./your-project"
-echo "    python examples/fix_bug.py     # end-to-end demo"
+say "Done. axon is on your PATH; run it from any project:"
+echo "    axon --cwd ./your-project              # interactive chat"
+echo "    axon -p \"fix the failing test\" --cwd ./your-project   # one-shot"
+[ "${GLOBAL:-0}" = "1" ] && echo "    (installed globally via pipx, independent of this repo)"

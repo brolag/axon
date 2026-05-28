@@ -14,6 +14,13 @@ All notable changes to axon are documented here. Format based on
 - Documentation site (Astro) under `site/`, deployable to GitHub Pages.
 - Hero asset and neural-motif SVG under `assets/`.
 - `axon` console entry point and `install.sh` installer with Ollama preflight checks.
+- **Global install**: `install.sh` uses pipx when available for a PATH-wide, repo-independent
+  command (like Claude Code). The default safety policy is bundled in the package, so axon
+  works installed from anywhere without the source tree.
+
+### Fixed
+- The loop recognizes an implicit `done` after a passing verification, instead of reporting
+  `stalled` when the model signs off in prose.
 
 ## [0.1.0] - 2026-05-27
 
