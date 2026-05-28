@@ -21,6 +21,8 @@ All notable changes to axon are documented here. Format based on
 ### Fixed
 - The loop recognizes an implicit `done` after a passing verification, instead of reporting
   `stalled` when the model signs off in prose.
+- Chat mode now shows live progress (`· thinking…` and each tool call as it runs), so a slow
+  local model no longer looks frozen between turns.
 
 ## [0.1.0] - 2026-05-27
 

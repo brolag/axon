@@ -119,7 +119,7 @@ def run_repl(
         session.done = False
         session.done_reason = None
         session.recent_calls = []
-        result = _loop(session, engine, client, schemas, approve, run_subagent, depth=0)
+        result = _loop(session, engine, client, schemas, approve, run_subagent, depth=0, verbose=True)
         flag = "✓" if result.done else "✗"
         print(f"{flag} {result.reason} in {result.steps} steps "
               f"(~{max(session.budget_tokens, 0)} context tokens left)\n")
@@ -149,7 +149,13 @@ def run_repl(
     print("bye")
 
 
-def _loop(session, engine, client, schemas, approve, run_subagent, depth, naive=False) -> LoopResult:
+def _short_args(args: dict) -> str:
+    import json
+    s = json.dumps(args, ensure_ascii=False)
+    return s if len(s) <= 70 else s[:70] + "…}"
+
+
+def _loop(session, engine, client, schemas, approve, run_subagent, depth, naive=False, verbose=False) -> LoopResult:
     nudged = False
     while not session.done and session.step < session.max_steps:
         session.step += 1
@@ -158,7 +164,14 @@ def _loop(session, engine, client, schemas, approve, run_subagent, depth, naive=
         reminder = "" if naive else session.files_in_context()
         messages = session.messages + ([{"role": "system", "content": reminder}] if reminder else [])
 
+        if verbose:
+            print("  · thinking…", flush=True)
         turn = client.chat(messages, schemas)
+        if verbose:
+            for c in turn.tool_calls:
+                print(f"  → {c.name} {_short_args(c.arguments)}", flush=True)
+            if not turn.tool_calls and turn.content:
+                print(f"  · {turn.content.strip()[:200]}", flush=True)
 
         if not turn.tool_calls:
             # Text-only turn. If a verification already passed, the model is signing
