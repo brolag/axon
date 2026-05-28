@@ -26,6 +26,22 @@ axon "Fix the failing test in test_calc.py and confirm it passes" --cwd ./myproj
 python examples/fix_bug.py
 ```
 
+### Interactive mode
+
+Run `axon` with no task to open a conversational session. Context carries across
+turns, so the agent does not re-read what it already knows:
+
+```
+$ axon --cwd ./myproject
+axon › fix the login bug
+  ✓ done in 6 steps
+axon › now add a test for the empty-password case
+  ✓ done in 4 steps
+axon › /exit
+```
+
+Commands: `/exit`, `/quit`, `/reset` (clear the session).
+
 ## The pattern (and why it works)
 
 Each design decision is grounded in AI-engineering literature, not vibes:

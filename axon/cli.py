@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .artifacts import to_markdown
 from .client import OllamaClient
-from .loop import run_agent
+from .loop import run_agent, run_repl
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -16,7 +16,7 @@ def main(argv: list[str] | None = None) -> int:
         prog="axon",
         description="A local coding agent recreating Antigravity's plan-tool-verify pattern, powered by Gemma 4.",
     )
-    parser.add_argument("task", help="The task for the agent.")
+    parser.add_argument("task", nargs="?", help="The task. Omit to enter the interactive REPL.")
     parser.add_argument("--cwd", default=".", help="Workspace root (the jail). Default: current dir.")
     parser.add_argument("--model", default="gemma4:26b", help="Ollama model. Default: gemma4:26b.")
     parser.add_argument("--host", default=None, help="Ollama host (e.g. http://localhost:11434).")
@@ -32,6 +32,19 @@ def main(argv: list[str] | None = None) -> int:
     if problem:
         print(f"error: {problem}", file=sys.stderr)
         return 2
+
+    # No task -> interactive REPL (conversational session, context carries over).
+    if not args.task:
+        run_repl(
+            cwd=args.cwd,
+            model=args.model,
+            host=args.host,
+            temperature=args.temperature,
+            policy_path=args.policy,
+            identity=args.identity,
+            interactive=not args.yolo,
+        )
+        return 0
 
     result = run_agent(
         task=args.task,

@@ -71,6 +71,76 @@ def run_agent(
     return _loop(session, engine, client, schemas, approve, run_subagent, depth=0, naive=naive)
 
 
+def run_repl(
+    cwd: str | Path,
+    *,
+    model: str = "gemma4:26b",
+    host: str | None = None,
+    temperature: float = 0.0,
+    policy_path: str = "policy.yaml",
+    identity: str = "You are a coding agent for this repository.",
+    sections: list[str] | None = None,
+    interactive: bool = True,
+    approve: Callable[[str, str], bool] | None = None,
+    client: OllamaClient | None = None,
+) -> None:
+    """Conversational session: keep one Session alive across turns.
+
+    Context (history, read-file cache) carries over between tasks, so the agent
+    does not re-read what it already knows. Commands: /exit, /quit, /reset.
+    """
+    policy = Policy.load(policy_path)
+    cwd = Path(cwd).resolve()
+    engine = PolicyEngine(policy, cwd=cwd, interactive=interactive)
+    client = client or OllamaClient(model=model, host=host, temperature=temperature)
+    approve = approve or (_default_approve if interactive else (lambda *_: False))
+
+    schemas = SCHEMAS
+    system = build_system_prompt(identity, str(cwd), tools_doc(schemas), sections)
+
+    def fresh_session() -> Session:
+        return Session(
+            cwd=cwd,
+            max_steps=policy.max_steps,
+            messages=[{"role": "system", "content": system}],
+        )
+
+    session = fresh_session()
+
+    def run_subagent(sub_task: str, allowed: list[str] | None, max_steps: int) -> str:
+        return _run_subagent_loop(sub_task, engine, client, max_steps, depth=1)
+
+    print(f"axon REPL  ·  model={client.model}  ·  workspace={cwd}")
+    print("Type a task. Commands: /exit, /quit, /reset.\n")
+    while True:
+        try:
+            line = input("axon › ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+        if not line:
+            continue
+        if line in {"/exit", "/quit"}:
+            break
+        if line == "/reset":
+            session = fresh_session()
+            print("(session reset)\n")
+            continue
+
+        # Continue the same session: append the task, reset per-turn counters.
+        session.messages.append({"role": "user", "content": line})
+        session.step = 0
+        session.done = False
+        session.done_reason = None
+        session.recent_calls = []
+        result = _loop(session, engine, client, schemas, approve, run_subagent, depth=0)
+
+        flag = "✓" if result.done else "✗"
+        print(f"{flag} {result.reason} in {result.steps} steps "
+              f"(~{max(session.budget_tokens, 0)} context tokens left)\n")
+    print("bye")
+
+
 def _loop(session, engine, client, schemas, approve, run_subagent, depth, naive=False) -> LoopResult:
     nudged = False
     while not session.done and session.step < session.max_steps:
